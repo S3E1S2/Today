@@ -1,26 +1,95 @@
 @import "tailwindcss";
 
+/* ── Theme tokens (defaults — overridden at runtime by ThemeProvider) ────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Default — warm cream */
+  --c-bg:           #F8F3EB;
+  --c-card:         #ffffff;
+  --c-text1:        #2C1F0F;
+  --c-text2:        #6B5235;
+  --c-text3:        #A88B63;
+  --c-accent:       #D4673A;
+  --c-accent2:      #B8502A;
+  --c-accent-fg:    #ffffff;
+  --c-border:       #E2D4BF;
+  --c-divider:      #EFE6D6;
+  --c-skel:         #EFE6D6;
+  --c-item:         #FDFBF7;
+  --c-done-bg:      rgba(94, 140, 98, 0.10);
+  --c-done-fg:      #426647;
+  --c-check:        #5E8C62;
+  --c-check-hover:  #7FA882;
+  --c-streak:       #D4673A;
+  --c-trash:        #DDD0BE;
+  --c-ring:         rgba(212, 103, 58, 0.20);
+  --c-shadow:       0 1px 3px rgba(44,31,15,0.06), 0 4px 16px rgba(44,31,15,0.04);
+  --c-shadow-h:     0 2px 8px rgba(44,31,15,0.09), 0 8px 24px rgba(44,31,15,0.07);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ── Base ────────────────────────────────────────────────────────────────── */
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--c-bg);
+  color: var(--c-text1);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
+
+.card {
+  background: var(--c-card);
+  border-radius: 1rem;
+  border: 1px solid var(--c-border);
+  box-shadow: var(--c-shadow);
+  transition: box-shadow 0.2s ease, background-color 0.25s ease, border-color 0.25s ease;
+}
+.card:hover { box-shadow: var(--c-shadow-h); }
+
+/* ── Semantic utilities ───────────────────────────────────────────────────── */
+
+/* News article link titles change to accent on hover */
+.news-link .news-title {
+  color: var(--c-text1);
+  transition: color 0.15s;
+}
+.news-link:hover .news-title { color: var(--c-accent); }
+
+/* Fact source link */
+.fact-source { color: var(--c-text3); transition: color 0.15s; }
+.fact-source:hover { color: var(--c-accent); }
+
+/* Habit checkbox (unchecked) hover */
+.check-empty { border-color: var(--c-border); }
+.check-empty:hover { border-color: var(--c-check-hover); }
+
+/* Trash icon */
+.trash-btn { color: var(--c-trash); transition: color 0.15s; }
+.trash-btn:hover { color: var(--c-accent); }
+
+/* "Another" refresh button */
+.refresh-btn { color: var(--c-text3); transition: color 0.15s; }
+.refresh-btn:hover { color: var(--c-accent); }
+
+/* Input */
+.th-input {
+  background-color: var(--c-item);
+  border: 1px solid var(--c-border);
+  color: var(--c-text1);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.th-input::placeholder { color: var(--c-text3); }
+.th-input:focus {
+  outline: none;
+  border-color: var(--c-accent);
+  box-shadow: 0 0 0 3px var(--c-ring);
+}
+
+/* Accent button */
+.th-btn {
+  background-color: var(--c-accent);
+  color: var(--c-accent-fg);
+  transition: background-color 0.15s, opacity 0.15s;
+}
+.th-btn:hover:not(:disabled) { background-color: var(--c-accent2); }
+.th-btn:disabled { opacity: 0.4; cursor: not-allowed; }
