@@ -73,7 +73,7 @@ export default function AccountButton() {
   const [saving, setSaving] = useState(false);
 
   // Profile state — loaded from Supabase on panel open
-  const [displayName,  setDisplayName]  = useState("");
+  const [displayName,  setEditName]  = useState("");
   const [avatarColor,  setAvatarColor]  = useState(AVATAR_COLORS[0]);
   const [avatarUrl,    setAvatarUrl]    = useState<string | null>(null);
   // Shown on the button (persisted after save)
@@ -101,7 +101,7 @@ export default function AccountButton() {
   // Sync edit fields when panel opens
   useEffect(() => {
     if (open) {
-      setDisplayName(savedName ?? "");
+      setEditName(savedName ?? "");
       setAvatarColor(savedColor);
       setAvatarUrl(savedAvatar);
     }
@@ -224,7 +224,7 @@ export default function AccountButton() {
             <input
               type="text"
               value={displayName}
-              onChange={e => setDisplayName(e.target.value)}
+              onChange={e => setEditName(e.target.value)}
               placeholder="Your name"
               className="th-input"
               style={{ width: "100%", fontSize: "0.875rem", borderRadius: "0.5rem", padding: "0.5rem 0.625rem", boxSizing: "border-box" }}
