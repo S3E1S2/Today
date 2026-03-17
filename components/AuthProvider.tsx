@@ -1,7 +1,11 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { applyThemeVars } from '@/components/ThemeProvider'
+import type { ThemeId } from '@/components/ThemeProvider'
 import type { User } from '@supabase/supabase-js'
+
+const VALID_THEMES = new Set(['default', 'midnight', 'forest', 'rose', 'mono'])
 
 interface AuthCtx {
   user:             User | null
@@ -25,8 +29,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
     setDisplayName(data?.display_name ?? null)
-    // Always apply theme on login — saved preference or default (covers new accounts)
-    try { localStorage.setItem('today-theme', data?.theme ?? 'default'); } catch {}
+    // Always apply theme on login — saved preference or default for new accounts
+    const themeId = (data?.theme && VALID_THEMES.has(data.theme) ? data.theme : 'default') as ThemeId
+    try { localStorage.setItem('today-theme', themeId); } catch {}
+    applyThemeVars(themeId)
     if (data?.language) {
       try { localStorage.setItem('today-language', data.language); } catch {}
     }

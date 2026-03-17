@@ -148,7 +148,7 @@ const THEMES: Record<ThemeId, ThemeVars> = {
   },
 };
 
-function applyThemeVars(id: ThemeId) {
+export function applyThemeVars(id: ThemeId) {
   const vars = THEMES[id];
   const root = document.documentElement;
   for (const [key, value] of Object.entries(vars)) {
