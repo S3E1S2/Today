@@ -17,6 +17,14 @@ function ClockIcon() {
   );
 }
 
+const LOCALE_TO_WIKI: Record<string, string> = {
+  "en-US": "en",
+  "es-ES": "es",
+  "fr-FR": "fr",
+  "de-DE": "de",
+  "id-ID": "id",
+};
+
 export default function HistoryCard() {
   const { locale, t } = useLanguage();
   const [events,  setEvents]  = useState<HistoryEvent[]>([]);
@@ -24,11 +32,15 @@ export default function HistoryCard() {
   const [error,   setError]   = useState<string | null>(null);
 
   useEffect(() => {
+    setLoading(true);
+    setError(null);
+    setEvents([]);
     const now   = new Date();
     const month = now.getMonth() + 1;
     const day   = now.getDate();
+    const lang  = LOCALE_TO_WIKI[locale] ?? "en";
 
-    fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`, {
+    fetch(`https://${lang}.wikipedia.org/api/rest_v1/feed/onthisday/events/${month}/${day}`, {
       headers: { Accept: "application/json" },
     })
       .then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
@@ -43,7 +55,7 @@ export default function HistoryCard() {
       })
       .catch(e => setError(String(e)))
       .finally(() => setLoading(false));
-  }, []);
+  }, [locale]);
 
   const today = new Date();
   const dateLabel = today.toLocaleDateString(locale, { month: "long", day: "numeric" });

@@ -4,13 +4,14 @@ import { supabase } from '@/lib/supabase'
 import type { User } from '@supabase/supabase-js'
 
 interface AuthCtx {
-  user:           User | null
-  displayName:    string | null
-  refreshProfile: () => void
+  user:             User | null
+  displayName:      string | null
+  setDisplayName:   (name: string | null) => void
+  refreshProfile:   () => void
 }
 
 const AuthContext = createContext<AuthCtx>({
-  user: null, displayName: null, refreshProfile: () => {},
+  user: null, displayName: null, setDisplayName: () => {}, refreshProfile: () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, fetchDisplayName])
 
   return (
-    <AuthContext.Provider value={{ user, displayName, refreshProfile }}>
+    <AuthContext.Provider value={{ user, displayName, setDisplayName, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   )

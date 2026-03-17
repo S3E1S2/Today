@@ -64,7 +64,7 @@ function AvatarCircle({ avatarUrl, initials, color, size = 36 }: {
 }
 
 export default function AccountButton() {
-  const { user, refreshProfile } = useAuth();
+  const { user, setDisplayName, refreshProfile } = useAuth();
   const router   = useRouter();
   const wrapRef  = useRef<HTMLDivElement>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
@@ -138,15 +138,17 @@ export default function AccountButton() {
     const name  = displayName.trim() || null;
     const color = avatarColor;
     const photo = avatarUrl;
-    await supabase.from("profiles").upsert({
+    const { error } = await supabase.from("profiles").upsert({
       id: user.id,
       display_name: name,
       avatar_color: color,
       avatar_url:   photo,
     });
+    if (error) { console.error("[Profile] upsert failed:", error); setSaving(false); return; }
     setSavedName(name);
     setSavedColor(color);
     setSavedAvatar(photo);
+    setDisplayName(name);
     refreshProfile();
     setSaving(false);
     setOpen(false);
