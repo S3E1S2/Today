@@ -1,47 +1,26 @@
-import { NextResponse } from "next/server";
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url)
+  const url = searchParams.get('url')
 
-const BBC_RSS = "https://feeds.bbci.co.uk/news/rss.xml";
+  if (!url) {
+    return new Response('Missing ?url= parameter', { status: 400 })
+  }
 
-function text(xml: string, tag: string): string {
-  // Matches both CDATA and plain text content for a given tag
-  const m = xml.match(
-    new RegExp(`<${tag}[^>]*><!\\[CDATA\\[([\\s\\S]*?)\\]\\]><\\/${tag}>|<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`)
-  );
-  return (m ? (m[1] ?? m[2] ?? "") : "").trim();
-}
-
-function parseRSS(xml: string) {
-  const items = [...xml.matchAll(/<item>([\s\S]*?)<\/item>/g)];
-  return items.slice(0, 5).map(([, content]) => {
-    // <link> in RSS sits between tags without wrapping — grab the raw text node
-    const linkMatch =
-      content.match(/<link>([^<]+)<\/link>/) ??
-      content.match(/<link[^>]*\/>[\s\S]*?<link>([^<]+)<\/link>/);
-
-    return {
-      title: text(content, "title"),
-      description: text(content, "description"),
-      url: linkMatch?.[1]?.trim() ?? "",
-      publishedAt: text(content, "pubDate"),
-      source: { name: "BBC News" },
-    };
-  });
-}
-
-export async function GET() {
   try {
-    const res = await fetch(BBC_RSS, {
-      next: { revalidate: 1800 }, // cache 30 min
-      headers: { "User-Agent": "today-dashboard/1.0" },
-    });
+    const response = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; RSS reader)' },
+      next: { revalidate: 300 },
+    })
 
-    if (!res.ok) throw new Error(`BBC RSS returned ${res.status}`);
+    if (!response.ok) {
+      return new Response(`Upstream error: ${response.status}`, { status: response.status })
+    }
 
-    const xml = await res.text();
-    const articles = parseRSS(xml);
-
-    return NextResponse.json({ articles });
+    const text = await response.text()
+    return new Response(text, {
+      headers: { 'Content-Type': 'text/xml; charset=utf-8' },
+    })
   } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 });
+    return new Response(`Fetch failed: ${String(err)}`, { status: 500 })
   }
 }

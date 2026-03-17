@@ -516,14 +516,16 @@ function heatColor(count: number): string {
 }
 
 function HabitHeatmap({ habits, weekStart, locale }: { habits: Habit[]; weekStart: 0 | 1; locale: string }) {
-  const { t }                  = useLanguage();
-  const { accountCreatedAt }   = useAuth();
+  const { t }        = useLanguage();
+  const { user }     = useAuth();
+  const accountCreatedAt = user?.created_at ? new Date(user.created_at) : null;
   const TODAY_STR = localDS(new Date());
   const [range, setRange] = useState<HeatRange>("3m");
 
   const weeks = useMemo(
     () => buildHeatmapWeeks(range, habits, weekStart, accountCreatedAt),
-    [range, habits, weekStart, accountCreatedAt],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [range, habits, weekStart, user?.created_at],
   );
   const dayLabels = useMemo(() => getDayNarrow(locale, weekStart), [locale, weekStart]);
 

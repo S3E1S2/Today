@@ -2,13 +2,23 @@
 
 -- ── Profiles ─────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS profiles (
-  id         UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
-  email      TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+  id           UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+  email        TEXT,
+  display_name TEXT,
+  avatar_color TEXT NOT NULL DEFAULT '#D4673A',
+  avatar_url   TEXT,
+  created_at   TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 ALTER TABLE profiles ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "profiles_self" ON profiles
   USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
+
+-- Migration: add new columns if profiles table already exists
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS display_name TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_color TEXT NOT NULL DEFAULT '#D4673A';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url   TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS language     TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS theme        TEXT;
 
 -- ── Habits ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS habits (

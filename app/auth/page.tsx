@@ -1,13 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/AuthProvider";
+import { useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function AuthPage() {
-  const { user, loading, signIn, signUp } = useAuth();
-  const router = useRouter();
-
   const [mode,     setMode]     = useState<"signin" | "signup">("signin");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -15,47 +11,71 @@ export default function AuthPage() {
   const [error,    setError]    = useState<string | null>(null);
   const [info,     setInfo]     = useState<string | null>(null);
 
-  // Already logged in → go home
-  useEffect(() => {
-    if (!loading && user) router.replace("/");
-  }, [user, loading, router]);
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    console.log("[Auth] handleSubmit fired, mode:", mode);
     setBusy(true);
     setError(null);
     setInfo(null);
 
     try {
       if (mode === "signup") {
-        console.log("[Auth] Calling signUp with email:", email);
-        const { error } = await signUp(email, password);
-        console.log("[Auth] signUp result — error:", error);
+        const { data, error } = await supabase.auth.signUp({ email, password });
+        console.log("[Auth] signUp data:", data, "error:", error);
+
         if (error) {
-          setError(error);
-        } else {
-          router.replace("/");
+          setError(error.message);
+          return;
         }
+
+        if (data.session) {
+          setInfo("Account created! Redirecting…");
+          window.location.href = "/";
+          return;
+        }
+
+        // No session yet (e.g. email confirmation pending — shouldn't happen
+        // if confirmation is disabled, but handle gracefully)
+        setInfo("Account created — signing you in…");
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
+        console.log("[Auth] post-signup signIn:", signInData, signInErr);
+        if (signInData.session) {
+          window.location.href = "/";
+        } else {
+          setError(signInErr?.message ?? "Could not sign in after registration.");
+        }
+        return;
+      }
+
+      // Sign in
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      console.log("[Auth] signIn data:", data, "error:", error);
+
+      if (error && error.message !== "Email not confirmed") {
+        setError(error.message);
+        return;
+      }
+
+      if (data.session) {
+        setInfo("Signed in! Redirecting…");
+        window.location.href = "/";
+        return;
+      }
+
+      // "Email not confirmed" path — session may still exist in storage
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("[Auth] getSession after signIn:", session);
+      if (session) {
+        window.location.href = "/";
       } else {
-        console.log("[Auth] Calling signIn with email:", email);
-        const { error } = await signIn(email, password);
-        console.log("[Auth] signIn result — error:", error);
-        if (error) {
-          setError(error);
-        } else {
-          router.replace("/");
-        }
+        setError("Could not establish a session. Check your credentials or try signing up.");
       }
     } catch (err) {
-      console.error("[Auth] Unexpected error in handleSubmit:", err);
+      console.error("[Auth] unexpected error:", err);
       setError("Something went wrong. Please try again.");
     } finally {
       setBusy(false);
     }
   }
-
-  if (loading) return null;
 
   return (
     <div style={{
@@ -68,7 +88,6 @@ export default function AuthPage() {
     }}>
       <div style={{ width: "100%", maxWidth: 380 }}>
 
-        {/* Logo */}
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--c-text1)", letterSpacing: "-0.02em" }}>
             Today ☀️
@@ -78,7 +97,6 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Card */}
         <div style={{
           backgroundColor: "var(--c-card)",
           border: "1px solid var(--c-border)",
@@ -95,6 +113,7 @@ export default function AuthPage() {
             {(["signin", "signup"] as const).map((m) => (
               <button
                 key={m}
+                type="button"
                 onClick={() => { setMode(m); setError(null); setInfo(null); }}
                 style={{
                   flex: 1, padding: "0.5rem", borderRadius: "0.625rem",
@@ -110,7 +129,6 @@ export default function AuthPage() {
             ))}
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
               <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--c-text3)" }}>Email</span>
@@ -145,7 +163,7 @@ export default function AuthPage() {
               </p>
             )}
             {info && (
-              <p style={{ fontSize: "0.8125rem", color: "var(--c-check)", textAlign: "center", margin: 0 }}>
+              <p style={{ fontSize: "0.8125rem", color: "var(--c-accent)", textAlign: "center", margin: 0 }}>
                 {info}
               </p>
             )}
@@ -164,17 +182,15 @@ export default function AuthPage() {
             </button>
           </form>
 
-          {/* Divider */}
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", margin: "1.25rem 0" }}>
             <div style={{ flex: 1, height: 1, backgroundColor: "var(--c-divider)" }} />
             <span style={{ fontSize: "0.75rem", color: "var(--c-text3)" }}>or</span>
             <div style={{ flex: 1, height: 1, backgroundColor: "var(--c-divider)" }} />
           </div>
 
-          {/* Continue as guest */}
           <button
             type="button"
-            onClick={() => { console.log("[Auth] Continue as guest clicked"); router.push("/"); }}
+            onClick={() => { window.location.href = "/"; }}
             style={{
               width: "100%", padding: "0.625rem", borderRadius: "0.625rem",
               fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",

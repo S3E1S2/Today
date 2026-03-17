@@ -1,67 +1,103 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLanguage } from "./LanguageProvider";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
 
 interface Article {
-  id: string;
-  title: string;
-  url: string;
-  description: string;
-  publishedAt: string;
-  source: string;
+  id:            string;
+  title:         string;
+  originalTitle?: string; // native-language title when "Translate to EN" is on
+  url:           string;
+  description:   string;
+  publishedAt:   string;
+  source:        string;
+  category:      "world" | "sports";
+}
+
+interface FeedConfig {
+  name:     string;
+  url:      string;
   category: "world" | "sports";
 }
 
-/* ── Feed sources ──────────────────────────────────────────────────────────── */
+/* ── Feed sets per locale ──────────────────────────────────────────────────── */
 
-const FEEDS = [
-  { name: "BBC News",        url: "https://feeds.bbci.co.uk/news/rss.xml",                    category: "world"  },
-  { name: "Reuters",         url: "https://feeds.reuters.com/reuters/topNews",                 category: "world"  },
-  { name: "The Guardian",    url: "https://www.theguardian.com/world/rss",                    category: "world"  },
-  { name: "Al Jazeera",      url: "https://www.aljazeera.com/xml/rss/all.xml",               category: "world"  },
-  { name: "NPR News",        url: "https://feeds.npr.org/1001/rss.xml",                       category: "world"  },
-  { name: "ABC News",        url: "https://abcnews.go.com/abcnews/topstories",               category: "world"  },
-  { name: "CBS News",        url: "https://www.cbsnews.com/latest/rss/main",                  category: "world"  },
-  { name: "ESPN",            url: "https://www.espn.com/espn/rss/news",                       category: "sports" },
-  { name: "Sky Sports",      url: "https://www.skysports.com/rss/12040",                      category: "sports" },
-  { name: "Science Daily",   url: "https://www.sciencedaily.com/rss/top/science.xml",         category: "world"  },
-] as const;
+const FEEDS_EN: FeedConfig[] = [
+  { name: "BBC News",          url: "https://feeds.bbci.co.uk/news/rss.xml",                        category: "world"  },
+  { name: "CNN",               url: "https://rss.cnn.com/rss/cnn_topstories.rss",                   category: "world"  },
+  { name: "Reuters",           url: "https://feeds.reuters.com/reuters/worldNews",                   category: "world"  },
+  { name: "The Guardian",      url: "https://www.theguardian.com/world/rss",                         category: "world"  },
+  { name: "Al Jazeera",        url: "https://www.aljazeera.com/xml/rss/all.xml",                     category: "world"  },
+  { name: "The New York Times",url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",     category: "world"  },
+  { name: "Washington Post",   url: "https://feeds.washingtonpost.com/rss/world",                    category: "world"  },
+  { name: "Fox News",          url: "https://moxie.foxnews.com/google-publisher/latest.xml",         category: "world"  },
+  { name: "ESPN",              url: "https://www.espn.com/espn/rss/news",                            category: "sports" },
+];
+
+const FEEDS_ES: FeedConfig[] = [
+  { name: "El País",    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada", category: "world" },
+  { name: "El Mundo",   url: "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml",             category: "world" },
+  { name: "BBC Mundo",  url: "https://feeds.bbci.co.uk/mundo/rss.xml",                          category: "world" },
+  { name: "CNN Español",url: "https://cnnespanol.cnn.com/feed/",                                 category: "world" },
+];
+
+const FEEDS_FR: FeedConfig[] = [
+  { name: "Le Monde",  url: "https://www.lemonde.fr/rss/une.xml",              category: "world" },
+  { name: "Le Figaro", url: "https://www.lefigaro.fr/rss/figaro_actualites.xml", category: "world" },
+  { name: "France 24", url: "https://www.france24.com/fr/rss",                 category: "world" },
+];
+
+const FEEDS_DE: FeedConfig[] = [
+  { name: "Der Spiegel",    url: "https://www.spiegel.de/schlagzeilen/index.rss", category: "world" },
+  { name: "Deutsche Welle", url: "https://rss.dw.com/rdf/rss-de-all",            category: "world" },
+  { name: "Die Zeit",       url: "https://newsfeed.zeit.de/index",               category: "world" },
+];
+
+const FEEDS_ID: FeedConfig[] = [
+  { name: "Kompas",        url: "https://rss.kompas.com/money/xml/rssatm.xml",    category: "world" },
+  { name: "Detik",         url: "https://feed.detik.com/detikcom-index",          category: "world" },
+  { name: "BBC Indonesia", url: "https://feeds.bbci.co.uk/indonesian/rss.xml",   category: "world" },
+  { name: "CNN Indonesia", url: "https://www.cnnindonesia.com/rss",               category: "world" },
+];
+
+const FEEDS_BY_LOCALE: Record<string, FeedConfig[]> = {
+  "en-US": FEEDS_EN,
+  "es-ES": FEEDS_ES,
+  "fr-FR": FEEDS_FR,
+  "de-DE": FEEDS_DE,
+  "id-ID": FEEDS_ID,
+};
+
+// Source language code for MyMemory translate-to-EN
+const SOURCE_LANG: Record<string, string> = {
+  "es-ES": "es",
+  "fr-FR": "fr",
+  "de-DE": "de",
+  "id-ID": "id",
+};
+
+/* ── Translation helper ────────────────────────────────────────────────────── */
+
+async function translateText(text: string, langpair: string): Promise<string> {
+  if (!text.trim()) return text;
+  const res = await fetch(
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${langpair}`
+  );
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json() as { responseData?: { translatedText?: string }; responseStatus?: number };
+  const translated = data?.responseData?.translatedText;
+  if (!translated || data?.responseStatus === 403) throw new Error("Translation unavailable");
+  return translated;
+}
 
 /* ── Proxy helpers ─────────────────────────────────────────────────────────── */
 
-const PROXIES = [
-  (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
-  (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
-];
-
-async function fetchViaProxy(feedUrl: string, signal: AbortSignal): Promise<string> {
-  let lastError: unknown;
-  for (const makeProxy of PROXIES) {
-    const proxyUrl = makeProxy(feedUrl);
-    try {
-      const res = await fetch(proxyUrl, { signal });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      // allorigins returns JSON { contents: "..." }
-      // corsproxy.io returns raw text
-      const text = await res.text();
-      try {
-        const json = JSON.parse(text) as { contents?: string };
-        if (json.contents) return json.contents;
-      } catch {
-        // not JSON — it's already raw XML
-      }
-      return text;
-    } catch (err) {
-      if ((err as Error).name === "AbortError") throw err;
-      lastError = err;
-      console.warn(`[News] Proxy ${proxyUrl} failed for ${feedUrl}:`, err);
-    }
-  }
-  throw lastError;
+async function fetchViaProxy(feedUrl: string): Promise<string> {
+  const res = await fetch(`/api/news?url=${encodeURIComponent(feedUrl)}`);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.text();
 }
 
 /* ── XML / RSS helpers ─────────────────────────────────────────────────────── */
@@ -71,7 +107,6 @@ function safeText(el: Element | null | undefined): string {
 }
 
 function getItemLink(item: Element): string {
-  // Walk all <link> children — handles text-node links and href attributes (Atom)
   const links = item.getElementsByTagName("link");
   for (let i = 0; i < links.length; i++) {
     const href = links[i].getAttribute("href");
@@ -79,10 +114,8 @@ function getItemLink(item: Element): string {
     const txt = links[i].textContent?.trim();
     if (txt?.startsWith("http")) return txt;
   }
-  // Fallback: guid that looks like a URL
   const guidText = safeText(item.getElementsByTagName("guid")[0]);
   if (guidText.startsWith("http")) return guidText;
-  // Atom: <id> that looks like a URL
   const idText = safeText(item.getElementsByTagName("id")[0]);
   if (idText.startsWith("http")) return idText;
   return "";
@@ -91,8 +124,8 @@ function getItemLink(item: Element): string {
 function getItemDate(item: Element): string {
   const raw =
     safeText(item.getElementsByTagName("pubDate")[0]) ||
-    safeText(item.getElementsByTagName("updated")[0]) ||   // Atom
-    safeText(item.getElementsByTagName("date")[0]);         // dc:date
+    safeText(item.getElementsByTagName("updated")[0]) ||
+    safeText(item.getElementsByTagName("date")[0]);
   if (!raw) return new Date().toISOString();
   const d = new Date(raw);
   return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
@@ -108,18 +141,14 @@ function parseXML(xml: string, source: string, category: string): Article[] {
     console.warn(`[News] ${source}: XML parse error`);
     return [];
   }
-
-  // Support both RSS <item> and Atom <entry>
   const items = [
     ...Array.from(doc.getElementsByTagName("item")),
     ...Array.from(doc.getElementsByTagName("entry")),
   ].slice(0, 15);
-
   if (items.length === 0) {
     console.warn(`[News] ${source}: no <item> or <entry> elements found`);
     return [];
   }
-
   const results: Article[] = [];
   for (const item of items) {
     const title = stripTags(safeText(item.getElementsByTagName("title")[0]));
@@ -127,53 +156,32 @@ function parseXML(xml: string, source: string, category: string): Article[] {
     if (!title || !url) continue;
     const desc = stripTags(
       safeText(item.getElementsByTagName("description")[0]) ||
-      safeText(item.getElementsByTagName("summary")[0]) ||    // Atom
-      safeText(item.getElementsByTagName("content")[0])       // Atom content
+      safeText(item.getElementsByTagName("summary")[0]) ||
+      safeText(item.getElementsByTagName("content")[0])
     ).slice(0, 300);
-    results.push({
-      id:          url,
-      title,
-      url,
-      description: desc,
-      publishedAt: getItemDate(item),
-      source,
-      category: category as "world" | "sports",
-    });
+    results.push({ id: url, title, url, description: desc, publishedAt: getItemDate(item), source, category: category as "world" | "sports" });
   }
   return results;
 }
 
-async function fetchFeed(feed: (typeof FEEDS)[number]): Promise<Article[]> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+async function fetchFeed(feed: FeedConfig): Promise<Article[]> {
   console.log(`[News] Fetching: ${feed.name} → ${feed.url}`);
   try {
-    const xml = await fetchViaProxy(feed.url, controller.signal);
+    const xml      = await fetchViaProxy(feed.url);
     const articles = parseXML(xml, feed.name, feed.category);
     console.log(`[News] ✓ ${feed.name}: ${articles.length} articles`);
     return articles;
   } catch (err) {
     console.error(`[News] ✗ ${feed.name} failed:`, err);
     throw err;
-  } finally {
-    clearTimeout(timer);
   }
 }
 
 /* ── Topic config ──────────────────────────────────────────────────────────── */
 
-// Priority order: most specific first — each article gets ONE primary topic
 const TOPIC_PRIORITY = [
-  "Fashion",
-  "Entertainment",
-  "Health",
-  "Science",
-  "Environment",
-  "War & Conflict",
-  "Business",
-  "Sports",
-  "Technology",
-  "Politics",
+  "Fashion", "Entertainment", "Health", "Science", "Environment",
+  "War & Conflict", "Business", "Sports", "Technology", "Politics",
 ];
 
 const TOPIC_KEYWORDS: Record<string, string[]> = {
@@ -189,8 +197,6 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   "Politics":       ["election", "president", "government", "parliament", "minister", "vote", "senate", "congress", "policy", "diplomat", "white house"],
 };
 
-const ALL_TOPICS = TOPIC_PRIORITY;
-
 const TOPIC_I18N_KEYS: Record<string, string> = {
   "Fashion":        "news.topic.fashion",
   "Entertainment":  "news.topic.entertainment",
@@ -204,27 +210,44 @@ const TOPIC_I18N_KEYS: Record<string, string> = {
   "Politics":       "news.topic.politics",
 };
 
-// Stories matching these keywords are Entertainment, not War & Conflict
 const ENTERTAINMENT_SIGNALS = ["oscar", "award", "film", "movie", "actor", "actress", "celebrity", "grammy", "emmy", "bafta", "hollywood"];
 
 /* ── Source accent colors ──────────────────────────────────────────────────── */
 
 const SOURCE_DOT: Record<string, string> = {
-  "BBC News":      "#b5121b",
-  "Reuters":       "#f06000",
-  "The Guardian":  "#005689",
-  "Al Jazeera":    "#7ab648",
-  "NPR News":      "#3f9ed4",
-  "ABC News":      "#00008b",
-  "CBS News":      "#004f9f",
-  "ESPN":          "#d00",
-  "Sky Sports":    "#0057b8",
-  "Science Daily": "#2a7ae4",
+  // English
+  "BBC News":           "#b5121b",
+  "CNN":                "#cc0000",
+  "Reuters":            "#f06000",
+  "The Guardian":       "#005689",
+  "Al Jazeera":         "#7ab648",
+  "The New York Times": "#1a1a1a",
+  "Washington Post":    "#231f20",
+  "Fox News":           "#003f8a",
+  "ESPN":               "#d00",
+  // Spanish
+  "El País":            "#004f9f",
+  "El Mundo":           "#d4000e",
+  "BBC Mundo":          "#b5121b",
+  "CNN Español":        "#cc0000",
+  // French
+  "Le Monde":           "#00a1e4",
+  "Le Figaro":          "#003189",
+  "France 24":          "#f00020",
+  // German
+  "Der Spiegel":        "#e2001a",
+  "Deutsche Welle":     "#009ee0",
+  "Die Zeit":           "#1a1a1a",
+  // Indonesian
+  "Kompas":             "#e21b23",
+  "Detik":              "#e31e24",
+  "BBC Indonesia":      "#b5121b",
+  "CNN Indonesia":      "#cc0000",
 };
 
 const FILTER_KEY = "today-news-filters-v1";
 
-/* ── Filtering helpers ─────────────────────────────────────────────────────── */
+/* ── Helpers ───────────────────────────────────────────────────────────────── */
 
 function detectPrimaryTopic(title: string, desc: string): string | null {
   const text = `${title} ${desc}`.toLowerCase();
@@ -267,15 +290,35 @@ function RefreshIcon({ spinning }: { spinning?: boolean }) {
   );
 }
 
+function GlobeIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="2" y1="12" x2="22" y2="12"/>
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+    </svg>
+  );
+}
+
 /* ── NewsSection ───────────────────────────────────────────────────────────── */
 
 export default function NewsSection() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
+
+  const activeFeeds  = FEEDS_BY_LOCALE[locale] ?? FEEDS_EN;
+  const sourceLang   = SOURCE_LANG[locale] ?? null; // non-null only for non-English locales
+
   const [allArticles,   setAllArticles]   = useState<Article[]>([]);
+  const [displayArticles, setDisplayArticles] = useState<Article[]>([]);
   const [loading,       setLoading]       = useState(true);
   const [loadedCount,   setLoadedCount]   = useState(0);
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const [refreshKey,    setRefreshKey]    = useState(0);
+  const [translating,   setTranslating]   = useState(false);
+  const [translateToEn, setTranslateToEn] = useState(false);
+
+  // Cache: articleId → { title } (English translations)
+  const enCache = useRef<Map<string, string>>(new Map());
 
   // Filters
   const [category,     setCategory]     = useState<"all" | "world" | "sports">("all");
@@ -287,35 +330,36 @@ export default function NewsSection() {
     try {
       const raw = localStorage.getItem(FILTER_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed.category) setCategory(parsed.category);
-        // Support both old multi-select format and new single-select
-        if (typeof parsed.topic === "string") setActiveTopic(parsed.topic);
+        const p = JSON.parse(raw);
+        if (p.category) setCategory(p.category);
+        if (typeof p.topic === "string") setActiveTopic(p.topic);
       }
     } catch {}
     setFiltersReady(true);
   }, []);
 
-  // Persist filters whenever they change
   useEffect(() => {
     if (!filtersReady) return;
-    try { localStorage.setItem(FILTER_KEY, JSON.stringify({ category, topic: activeTopic })); }
-    catch {}
+    try { localStorage.setItem(FILTER_KEY, JSON.stringify({ category, topic: activeTopic })); } catch {}
   }, [category, activeTopic, filtersReady]);
 
-  // Fetch all feeds — articles stream in as each feed resolves
+  // ── Fetch feeds (re-runs when locale or refreshKey changes) ────────────────
   useEffect(() => {
     let alive = true;
     setLoading(true);
     setAllArticles([]);
+    setDisplayArticles([]);
     setFailedSources([]);
     setLoadedCount(0);
+    setTranslateToEn(false);
+    enCache.current.clear();
 
-    console.log("[News] Starting fetch for", FEEDS.length, "feeds");
+    const feeds = FEEDS_BY_LOCALE[locale] ?? FEEDS_EN;
+    console.log(`[News] Fetching ${feeds.length} feeds for locale: ${locale}`);
 
     (async () => {
       const results = await Promise.allSettled(
-        FEEDS.map(async feed => {
+        feeds.map(async feed => {
           try {
             const arts = await fetchFeed(feed);
             if (!alive) return;
@@ -324,11 +368,7 @@ export default function NewsSection() {
                 const merged = [...prev, ...arts];
                 merged.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
                 const seen = new Set<string>();
-                return merged.filter(a => {
-                  if (seen.has(a.url)) return false;
-                  seen.add(a.url);
-                  return true;
-                });
+                return merged.filter(a => { if (seen.has(a.url)) return false; seen.add(a.url); return true; });
               });
             }
           } catch {
@@ -340,27 +380,73 @@ export default function NewsSection() {
       );
 
       const succeeded = results.filter(r => r.status === "fulfilled").length;
-      console.log(`[News] Done — ${succeeded}/${FEEDS.length} feeds succeeded`);
-
+      console.log(`[News] Done — ${succeeded}/${feeds.length} feeds succeeded`);
       if (alive) setLoading(false);
     })();
 
     return () => { alive = false; };
-  }, [refreshKey]);
+  }, [refreshKey, locale]);
+
+  // ── Translate-to-English effect ────────────────────────────────────────────
+  useEffect(() => {
+    if (!translateToEn || !sourceLang || allArticles.length === 0) {
+      setDisplayArticles(allArticles);
+      return;
+    }
+
+    // Apply cache immediately to avoid blank flash
+    const applyCache = (articles: Article[]) =>
+      articles.map(a => {
+        const en = enCache.current.get(a.id);
+        return en ? { ...a, title: en, originalTitle: a.originalTitle ?? a.title } : a;
+      });
+
+    setDisplayArticles(applyCache(allArticles));
+
+    const toTranslate = allArticles.filter(a => !enCache.current.has(a.id));
+    if (toTranslate.length === 0) return;
+
+    const langpair = `${sourceLang}|en`;
+    let cancelled = false;
+    setTranslating(true);
+
+    (async () => {
+      const BATCH = 5;
+      for (let i = 0; i < toTranslate.length; i += BATCH) {
+        if (cancelled) break;
+        const chunk = toTranslate.slice(i, i + BATCH);
+        await Promise.allSettled(chunk.map(async (a) => {
+          const nativeTitle = a.originalTitle ?? a.title;
+          try {
+            const translated = await translateText(nativeTitle, langpair);
+            enCache.current.set(a.id, translated);
+          } catch {
+            enCache.current.set(a.id, nativeTitle); // fallback: store native so we don't retry
+          }
+        }));
+        if (!cancelled) setDisplayArticles(applyCache(allArticles));
+        if (i + BATCH < toTranslate.length) await new Promise(r => setTimeout(r, 300));
+      }
+      if (!cancelled) setTranslating(false);
+    })();
+
+    return () => { cancelled = true; };
+  }, [allArticles, translateToEn, sourceLang]);
+
+  // When toggle turns off, revert to originals
+  useEffect(() => {
+    if (!translateToEn) setDisplayArticles(allArticles);
+  }, [translateToEn, allArticles]);
 
   // Apply filters
   const filtered = useMemo(() => {
-    let result = allArticles;
+    let result = displayArticles;
     if (category !== "all") result = result.filter(a => a.category === category);
     if (activeTopic !== null) {
       result = result.filter(a => detectPrimaryTopic(a.title, a.description) === activeTopic);
     }
     return result.slice(0, 10);
-  }, [allArticles, category, activeTopic]);
-
-  function handleTopicClick(t: string) {
-    setActiveTopic(prev => prev === t ? null : t);
-  }
+  }, [displayArticles, category, activeTopic]);
 
   const anyFilterActive = category !== "all" || activeTopic !== null;
 
@@ -374,13 +460,36 @@ export default function NewsSection() {
           {t("news.title")}
         </h2>
 
-        {/* Feed progress */}
+        {/* Translate-to-EN toggle — only for non-English locales */}
+        {sourceLang && !loading && allArticles.length > 0 && (
+          <button
+            onClick={() => setTranslateToEn(v => !v)}
+            disabled={translating}
+            title={translateToEn ? t("news.translateOff") : t("news.translateOn")}
+            style={{
+              display: "flex", alignItems: "center", gap: "0.3rem",
+              fontSize: "0.75rem", fontWeight: 500, cursor: translating ? "default" : "pointer",
+              padding: "0.25rem 0.625rem", borderRadius: "9999px",
+              border: `1.5px solid ${translateToEn ? "var(--c-accent)" : "var(--c-border)"}`,
+              backgroundColor: translateToEn ? "var(--c-accent)" : "transparent",
+              color: translateToEn ? "var(--c-accent-fg)" : "var(--c-text3)",
+              opacity: translating ? 0.6 : 1,
+              transition: "all 0.15s",
+            }}
+          >
+            <GlobeIcon /> EN
+          </button>
+        )}
+
+        {/* Feed / translating status */}
         <span className="text-xs tabular-nums" style={{ color: "var(--c-text3)" }}>
           {loading
-            ? t("news.loading", { loaded: loadedCount, total: FEEDS.length })
+            ? t("news.loading", { loaded: loadedCount, total: activeFeeds.length })
+            : translating
+            ? t("news.translating")
             : failedSources.length > 0
-            ? t("news.sourcesFailed", { ok: FEEDS.length - failedSources.length, total: FEEDS.length })
-            : t("news.sources", { total: FEEDS.length })}
+            ? t("news.sourcesFailed", { ok: activeFeeds.length - failedSources.length, total: activeFeeds.length })
+            : t("news.sources", { total: activeFeeds.length })}
         </span>
 
         <button
@@ -398,7 +507,7 @@ export default function NewsSection() {
         <div style={{ height: 2, borderRadius: 1, backgroundColor: "var(--c-skel)", overflow: "hidden" }}>
           <div style={{
             height: "100%",
-            width: `${Math.round((loadedCount / FEEDS.length) * 100)}%`,
+            width: `${Math.round((loadedCount / activeFeeds.length) * 100)}%`,
             backgroundColor: "var(--c-accent)",
             transition: "width 0.3s ease",
           }} />
@@ -426,7 +535,6 @@ export default function NewsSection() {
       {/* ── Topic pills ── */}
       <div className="-mx-5 sm:-mx-6 px-5 sm:px-6 overflow-x-auto">
         <div className="flex gap-2 pb-0.5" style={{ width: "max-content" }}>
-          {/* "All Topics" = clear filter */}
           <button
             onClick={() => setActiveTopic(null)}
             className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer whitespace-nowrap"
@@ -438,14 +546,12 @@ export default function NewsSection() {
           >
             {t("news.topic.all")}
           </button>
-
-          {/* Individual topic pills — single-select */}
-          {ALL_TOPICS.map(topic => {
+          {TOPIC_PRIORITY.map(topic => {
             const on = activeTopic === topic;
             return (
               <button
                 key={topic}
-                onClick={() => handleTopicClick(topic)}
+                onClick={() => setActiveTopic(prev => prev === topic ? null : topic)}
                 className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer whitespace-nowrap"
                 style={{
                   backgroundColor: on ? "var(--c-accent)" : "transparent",
@@ -453,14 +559,14 @@ export default function NewsSection() {
                   color: on ? "var(--c-accent-fg)" : "var(--c-text2)",
                 }}
               >
-                {t(TOPIC_I18N_KEYS[topic] ?? `news.topic.${topic}`)}
+                {t(TOPIC_I18N_KEYS[topic] ?? topic)}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── Loading skeleton (before any articles stream in) ── */}
+      {/* ── Loading skeleton ── */}
       {loading && allArticles.length === 0 && (
         <div className="flex flex-col gap-4 mt-1">
           {[...Array(6)].map((_, i) => (
@@ -476,30 +582,50 @@ export default function NewsSection() {
       {/* ── Article list ── */}
       {filtered.length > 0 && (
         <div className="flex flex-col">
-          {filtered.map((a, i) => (
-            <a
-              key={a.id}
-              href={a.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="news-link py-3 first:pt-1 last:pb-0 block"
-              style={{ borderBottom: i < filtered.length - 1 ? `1px solid var(--c-divider)` : "none" }}
-            >
-              <p className="news-title text-sm font-medium leading-snug">{a.title}</p>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                <span className="flex items-center gap-1.5">
-                  <span style={{
-                    width: 6, height: 6, borderRadius: "50%",
-                    backgroundColor: SOURCE_DOT[a.source] ?? "var(--c-accent)",
-                    display: "inline-block", flexShrink: 0,
-                  }} />
-                  <span className="text-xs font-medium" style={{ color: "var(--c-text3)" }}>{a.source}</span>
-                </span>
-                <span className="text-xs" style={{ color: "var(--c-text3)" }}>·</span>
-                <span className="text-xs" style={{ color: "var(--c-text3)" }}>{timeSince(a.publishedAt, t)}</span>
-                {(() => {
-                  const pt = detectPrimaryTopic(a.title, a.description);
-                  return pt ? (
+          {filtered.map((a, i) => {
+            const isTranslated = !!a.originalTitle;
+            const pt = detectPrimaryTopic(a.title, a.description);
+            return (
+              <a
+                key={a.id}
+                href={a.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="news-link py-3 first:pt-1 last:pb-0 block"
+                style={{ borderBottom: i < filtered.length - 1 ? `1px solid var(--c-divider)` : "none" }}
+              >
+                {/* Title row */}
+                <p className="news-title text-sm font-medium leading-snug">{a.title}</p>
+
+                {/* Original-language title shown below when translated */}
+                {isTranslated && (
+                  <p className="text-xs leading-snug mt-0.5" style={{ color: "var(--c-text3)" }}>
+                    {a.originalTitle}
+                  </p>
+                )}
+
+                {/* Meta row */}
+                <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                  <span className="flex items-center gap-1.5">
+                    <span style={{
+                      width: 6, height: 6, borderRadius: "50%",
+                      backgroundColor: SOURCE_DOT[a.source] ?? "var(--c-accent)",
+                      display: "inline-block", flexShrink: 0,
+                    }} />
+                    <span className="text-xs font-medium" style={{ color: "var(--c-text3)" }}>{a.source}</span>
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--c-text3)" }}>·</span>
+                  <span className="text-xs" style={{ color: "var(--c-text3)" }}>{timeSince(a.publishedAt, t)}</span>
+                  {isTranslated && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
+                      backgroundColor: "color-mix(in srgb, var(--c-accent) 12%, var(--c-item))",
+                      border: "1px solid color-mix(in srgb, var(--c-accent) 30%, var(--c-border))",
+                      color: "var(--c-accent)",
+                    }}>
+                      {t("news.translated")}
+                    </span>
+                  )}
+                  {pt && (
                     <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{
                       backgroundColor: "var(--c-item)",
                       border: "1px solid var(--c-border)",
@@ -507,20 +633,18 @@ export default function NewsSection() {
                     }}>
                       {t(TOPIC_I18N_KEYS[pt] ?? pt)}
                     </span>
-                  ) : null;
-                })()}
-              </div>
-            </a>
-          ))}
+                  )}
+                </div>
+              </a>
+            );
+          })}
         </div>
       )}
 
       {/* ── Empty: filters active but no results ── */}
-      {!loading && filtered.length === 0 && allArticles.length > 0 && (
+      {!loading && filtered.length === 0 && displayArticles.length > 0 && (
         <div className="text-center py-8">
-          <p className="text-sm" style={{ color: "var(--c-text2)" }}>
-            {t("news.noMatch")}
-          </p>
+          <p className="text-sm" style={{ color: "var(--c-text2)" }}>{t("news.noMatch")}</p>
           {anyFilterActive && (
             <button
               onClick={() => { setCategory("all"); setActiveTopic(null); }}
@@ -534,26 +658,20 @@ export default function NewsSection() {
       )}
 
       {/* ── Total failure ── */}
-      {!loading && allArticles.length === 0 && (
+      {!loading && displayArticles.length === 0 && (
         <div className="text-center py-8">
-          <p className="text-sm font-medium mb-1" style={{ color: "var(--c-text2)" }}>
-            {t("news.failedTitle")}
-          </p>
+          <p className="text-sm font-medium mb-1" style={{ color: "var(--c-text2)" }}>{t("news.failedTitle")}</p>
           <p className="text-xs mb-3" style={{ color: "var(--c-text3)" }}>
             {t("news.failedDetail", { sources: failedSources.join(", ") || "all" })}
           </p>
-          <button
-            onClick={() => setRefreshKey(k => k + 1)}
-            className="text-xs cursor-pointer"
-            style={{ color: "var(--c-accent)" }}
-          >
+          <button onClick={() => setRefreshKey(k => k + 1)} className="text-xs cursor-pointer" style={{ color: "var(--c-accent)" }}>
             {t("news.tryAgain")}
           </button>
         </div>
       )}
 
       {/* ── Partial failure note ── */}
-      {!loading && failedSources.length > 0 && allArticles.length > 0 && (
+      {!loading && failedSources.length > 0 && displayArticles.length > 0 && (
         <p className="text-xs pt-1" style={{ color: "var(--c-text3)", borderTop: `1px solid var(--c-divider)` }}>
           {t(failedSources.length !== 1 ? "news.unreachableN" : "news.unreachable", { count: failedSources.length, sources: failedSources.join(", ") })}
         </p>

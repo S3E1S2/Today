@@ -1,90 +1,55 @@
-"use client";
-
-import { createContext, useContext, useEffect, useState } from "react";
-import type { User } from "@supabase/supabase-js";
-import { supabase } from "@/lib/supabase";
+'use client'
+import { createContext, useCallback, useContext, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
 interface AuthCtx {
-  user: User | null;
-  loading: boolean;
-  accountCreatedAt: Date | null;
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signOut: () => Promise<void>;
+  user:           User | null
+  displayName:    string | null
+  refreshProfile: () => void
 }
 
 const AuthContext = createContext<AuthCtx>({
-  user: null,
-  loading: true,
-  accountCreatedAt: null,
-  signUp: async () => ({ error: null }),
-  signIn: async () => ({ error: null }),
-  signOut: async () => {},
-});
+  user: null, displayName: null, refreshProfile: () => {},
+})
 
-export function useAuth() {
-  return useContext(AuthContext);
-}
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user,        setUser]        = useState<User | null>(null)
+  const [displayName, setDisplayName] = useState<string | null>(null)
 
-export default function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user,             setUser]             = useState<User | null>(null);
-  const [loading,          setLoading]          = useState(true);
-  const [accountCreatedAt, setAccountCreatedAt] = useState<Date | null>(null);
-
-  async function fetchProfile(userId: string) {
+  const fetchDisplayName = useCallback(async (userId: string) => {
     const { data } = await supabase
-      .from("profiles")
-      .select("created_at")
-      .eq("id", userId)
-      .single();
-    if (data?.created_at) setAccountCreatedAt(new Date(data.created_at));
-  }
+      .from('profiles')
+      .select('display_name')
+      .eq('id', userId)
+      .single()
+    setDisplayName(data?.display_name ?? null)
+  }, [])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) fetchProfile(u.id);
-      setLoading(false);
-    });
+      setUser(session?.user ?? null)
+      if (session?.user) fetchDisplayName(session.user.id)
+    })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_, session) => {
-      const u = session?.user ?? null;
-      setUser(u);
-      if (u) fetchProfile(u.id);
-      else setAccountCreatedAt(null);
-    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      if (session?.user) fetchDisplayName(session.user.id)
+      else setDisplayName(null)
+    })
 
-    return () => subscription.unsubscribe();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    return () => subscription.unsubscribe()
+  }, [fetchDisplayName])
 
-  const signUp = async (email: string, password: string): Promise<{ error: string | null }> => {
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    if (!error && data.user) {
-      const created_at = new Date().toISOString();
-      await supabase.from("profiles").upsert({ id: data.user.id, email, created_at });
-      setAccountCreatedAt(new Date(created_at));
-    }
-    return { error: error?.message ?? null };
-  };
-
-  const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
-    console.log("[AuthProvider] signInWithPassword called for:", email);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    console.log("[AuthProvider] signInWithPassword result — error:", error?.message ?? null);
-    return { error: error?.message ?? null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setAccountCreatedAt(null);
-  };
+  const refreshProfile = useCallback(() => {
+    if (user) fetchDisplayName(user.id)
+  }, [user, fetchDisplayName])
 
   return (
-    <AuthContext.Provider value={{ user, loading, accountCreatedAt, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, displayName, refreshProfile }}>
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
+
+export const useAuth = () => useContext(AuthContext)
