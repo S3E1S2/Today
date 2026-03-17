@@ -1,7 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+
+const LANGUAGES = [
+  { code: "en-US", label: "EN" },
+  { code: "es-ES", label: "ES" },
+  { code: "fr-FR", label: "FR" },
+  { code: "de-DE", label: "DE" },
+  { code: "id-ID", label: "ID" },
+];
 
 export default function AuthPage() {
   const [mode,     setMode]     = useState<"signin" | "signup">("signin");
@@ -10,6 +18,17 @@ export default function AuthPage() {
   const [busy,     setBusy]     = useState(false);
   const [error,    setError]    = useState<string | null>(null);
   const [info,     setInfo]     = useState<string | null>(null);
+  const [language, setLanguage] = useState("en-US");
+
+  useEffect(() => {
+    try { setLanguage(localStorage.getItem("today-language") || "en-US"); } catch {}
+  }, []);
+
+  function applyLanguage(code: string) {
+    setLanguage(code);
+    try { localStorage.setItem("today-language", code); } catch {}
+    window.dispatchEvent(new CustomEvent("settings-updated"));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -104,6 +123,30 @@ export default function AuthPage() {
           padding: "1.75rem",
           boxShadow: "var(--c-shadow-h)",
         }}>
+
+          {/* Language picker */}
+          <div style={{ display: "flex", justifyContent: "center", gap: "0.375rem", marginBottom: "1.25rem" }}>
+            {LANGUAGES.map(lang => (
+              <button
+                key={lang.code}
+                type="button"
+                onClick={() => applyLanguage(lang.code)}
+                style={{
+                  padding: "0.25rem 0.625rem",
+                  borderRadius: "9999px",
+                  fontSize: "0.75rem",
+                  fontWeight: language === lang.code ? 700 : 400,
+                  cursor: "pointer",
+                  border: `1.5px solid ${language === lang.code ? "var(--c-accent)" : "var(--c-border)"}`,
+                  backgroundColor: language === lang.code ? "var(--c-accent)" : "transparent",
+                  color: language === lang.code ? "var(--c-accent-fg)" : "var(--c-text3)",
+                  transition: "all 0.15s",
+                }}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
 
           {/* Mode toggle */}
           <div style={{

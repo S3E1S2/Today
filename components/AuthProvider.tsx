@@ -25,14 +25,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single()
     setDisplayName(data?.display_name ?? null)
-    let changed = false
+    // Always apply theme on login — saved preference or default (covers new accounts)
+    try { localStorage.setItem('today-theme', data?.theme ?? 'default'); } catch {}
     if (data?.language) {
-      try { localStorage.setItem('today-language', data.language); changed = true; } catch {}
+      try { localStorage.setItem('today-language', data.language); } catch {}
     }
-    if (data?.theme) {
-      try { localStorage.setItem('today-theme', data.theme); changed = true; } catch {}
-    }
-    if (changed) window.dispatchEvent(new CustomEvent('settings-updated'))
+    window.dispatchEvent(new CustomEvent('settings-updated'))
   }, [])
 
   useEffect(() => {
