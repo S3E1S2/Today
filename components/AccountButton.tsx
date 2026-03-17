@@ -10,6 +10,12 @@ const AVATAR_COLORS = [
   "#A855F7", "#F59E0B", "#06B6D4", "#EF4444",
 ];
 
+const EMOJI_OPTIONS = [
+  "☀️","🌙","⭐","🌟","✨","🌈","🌸","🌺","🌻","🍀",
+  "🔥","❄️","⚡","💎","🎯","🎉","🏆","🎵","🦋","🌊",
+  "❤️","💛","💚","💙","💜","😊","🥰","🤩","👑","🎨",
+];
+
 function getInitials(email: string, displayName: string | null): string {
   if (displayName?.trim()) {
     const parts = displayName.trim().split(/\s+/);
@@ -64,7 +70,7 @@ function AvatarCircle({ avatarUrl, initials, color, size = 36 }: {
 }
 
 export default function AccountButton() {
-  const { user, setDisplayName, refreshProfile } = useAuth();
+  const { user, setDisplayName, setEmoji, refreshProfile } = useAuth();
   const router   = useRouter();
   const wrapRef  = useRef<HTMLDivElement>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
@@ -81,12 +87,16 @@ export default function AccountButton() {
   const [savedColor,   setSavedColor]   = useState(AVATAR_COLORS[0]);
   const [savedAvatar,  setSavedAvatar]  = useState<string | null>(null);
 
+  // Emoji
+  const [editEmoji,  setEditEmoji]  = useState<string | null>(null);
+  const [savedEmoji, setSavedEmoji] = useState<string | null>(null);
+
   // Load profile from Supabase when user logs in
   useEffect(() => {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, avatar_color, avatar_url")
+      .select("display_name, avatar_color, avatar_url, emoji")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
@@ -94,6 +104,7 @@ export default function AccountButton() {
           setSavedName(data.display_name ?? null);
           setSavedColor(data.avatar_color ?? AVATAR_COLORS[0]);
           setSavedAvatar(data.avatar_url ?? null);
+          setSavedEmoji(data.emoji ?? null);
         }
       });
   }, [user?.id]);
@@ -104,6 +115,7 @@ export default function AccountButton() {
       setEditName(savedName ?? "");
       setAvatarColor(savedColor);
       setAvatarUrl(savedAvatar);
+      setEditEmoji(savedEmoji);
     }
   }, [open, savedName, savedColor, savedAvatar]);
 
@@ -135,20 +147,24 @@ export default function AccountButton() {
   async function handleSave() {
     if (!user) return;
     setSaving(true);
-    const name  = displayName.trim() || null;
-    const color = avatarColor;
-    const photo = avatarUrl;
+    const name      = displayName.trim() || null;
+    const color     = avatarColor;
+    const photo     = avatarUrl;
+    const emojiVal  = editEmoji || null;
     const { error } = await supabase.from("profiles").upsert({
       id: user.id,
       display_name: name,
       avatar_color: color,
       avatar_url:   photo,
+      emoji:        emojiVal,
     });
     if (error) { console.error("[Profile] upsert failed:", error); setSaving(false); return; }
     setSavedName(name);
     setSavedColor(color);
     setSavedAvatar(photo);
+    setSavedEmoji(emojiVal);
     setDisplayName(name);
+    setEmoji(emojiVal);
     refreshProfile();
     setSaving(false);
     setOpen(false);
@@ -272,6 +288,56 @@ export default function AccountButton() {
               )}
             </div>
             <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoUpload} style={{ display: "none" }} />
+          </div>
+
+          {/* Greeting emoji */}
+          <div style={{ marginBottom: "0.875rem" }}>
+            <label style={{ display: "block", fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.375rem" }}>
+              Greeting emoji
+            </label>
+            {/* Type input + None button */}
+            <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
+              <input
+                type="text"
+                value={editEmoji ?? ""}
+                onChange={e => setEditEmoji(e.target.value || null)}
+                placeholder="Type emoji"
+                maxLength={8}
+                className="th-input"
+                style={{ width: 72, textAlign: "center", fontSize: "1.25rem", borderRadius: "0.5rem", padding: "0.3rem 0.5rem", boxSizing: "border-box" }}
+              />
+              <button
+                type="button"
+                onClick={() => setEditEmoji(null)}
+                style={{
+                  fontSize: "0.75rem", cursor: "pointer", padding: "0.3rem 0.625rem",
+                  borderRadius: "0.5rem", border: `1.5px solid ${editEmoji === null ? "var(--c-accent)" : "var(--c-border)"}`,
+                  backgroundColor: editEmoji === null ? "var(--c-done-bg)" : "transparent",
+                  color: editEmoji === null ? "var(--c-accent)" : "var(--c-text3)",
+                  fontWeight: editEmoji === null ? 600 : 400,
+                }}
+              >
+                No emoji
+              </button>
+            </div>
+            {/* Quick-pick grid */}
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
+              {EMOJI_OPTIONS.map(e => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => setEditEmoji(e)}
+                  style={{
+                    width: 30, height: 30, fontSize: "1rem", lineHeight: 1,
+                    borderRadius: "0.375rem", border: `2px solid ${editEmoji === e ? "var(--c-accent)" : "transparent"}`,
+                    backgroundColor: editEmoji === e ? "var(--c-done-bg)" : "var(--c-item)",
+                    cursor: "pointer", padding: 0,
+                  }}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Save */}

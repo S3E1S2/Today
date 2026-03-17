@@ -19,6 +19,7 @@ ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_color TEXT NOT NULL DEFAULT
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS avatar_url   TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS language     TEXT;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS theme        TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS emoji        TEXT;
 
 -- ── Habits ───────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS habits (
