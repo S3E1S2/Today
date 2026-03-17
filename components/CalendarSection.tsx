@@ -81,6 +81,7 @@ function buildHeatmapWeeks(
   habits: Habit[],
   weekStart: 0 | 1,
   accountCreatedAt?: Date | null,
+  heatYear?: number,
 ): Date[][] {
   const today = new Date(); today.setHours(0, 0, 0, 0);
 
@@ -92,8 +93,7 @@ function buildHeatmapWeeks(
     startDate = new Date(today);
     startDate.setDate(today.getDate() - 89);
   } else if (range === "year") {
-    // Entire current calendar year: Jan 1 → Dec 31
-    const yr = today.getFullYear();
+    const yr = heatYear ?? today.getFullYear();
     startDate = new Date(yr, 0, 1);
     endDate   = new Date(yr, 11, 31);
   } else {
@@ -519,13 +519,16 @@ function HabitHeatmap({ habits, weekStart, locale }: { habits: Habit[]; weekStar
   const { t }        = useLanguage();
   const { user }     = useAuth();
   const accountCreatedAt = user?.created_at ? new Date(user.created_at) : null;
-  const TODAY_STR = localDS(new Date());
-  const [range, setRange] = useState<HeatRange>("3m");
+  const TODAY_STR    = localDS(new Date());
+  const currentYear  = new Date().getFullYear();
+  const accountYear  = accountCreatedAt ? accountCreatedAt.getFullYear() : currentYear;
+  const [range, setRange]     = useState<HeatRange>("3m");
+  const [heatYear, setHeatYear] = useState(currentYear);
 
   const weeks = useMemo(
-    () => buildHeatmapWeeks(range, habits, weekStart, accountCreatedAt),
+    () => buildHeatmapWeeks(range, habits, weekStart, accountCreatedAt, heatYear),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [range, habits, weekStart, user?.created_at],
+    [range, habits, weekStart, user?.created_at, heatYear],
   );
   const dayLabels = useMemo(() => getDayNarrow(locale, weekStart), [locale, weekStart]);
 
@@ -534,6 +537,8 @@ function HabitHeatmap({ habits, weekStart, locale }: { habits: Habit[]; weekStar
     weeks.forEach((week, wi) => {
       const prev = wi > 0 ? weeks[wi - 1][0] : null;
       if (!prev || prev.getMonth() !== week[0].getMonth()) {
+        // In year view, skip labels for months outside the target year (alignment padding)
+        if (range === "year" && week[0].getFullYear() !== heatYear) return;
         labels.push({
           weekIdx: wi,
           label: new Intl.DateTimeFormat(locale, { month: "short" }).format(week[0]).replace(/\.$/, ""),
@@ -541,7 +546,7 @@ function HabitHeatmap({ habits, weekStart, locale }: { habits: Habit[]; weekStar
       }
     });
     return labels;
-  }, [weeks, locale]);
+  }, [weeks, locale, range, heatYear]);
 
   function completedCount(d: Date): number {
     const s = localDS(d);
@@ -551,11 +556,10 @@ function HabitHeatmap({ habits, weekStart, locale }: { habits: Habit[]; weekStar
   const CELL = 14;
   const GAP  = 3;
 
-  const currentYear = new Date().getFullYear();
   const rangeOptions: { key: HeatRange; label: string }[] = [
-    { key: "3m",   label: t("cal.range3m")       },
-    { key: "year", label: String(currentYear)     },
-    { key: "all",  label: t("cal.rangeAll")       },
+    { key: "3m",   label: t("cal.range3m")   },
+    { key: "year", label: String(heatYear)   },
+    { key: "all",  label: t("cal.rangeAll")  },
   ];
 
   return (
@@ -568,18 +572,48 @@ function HabitHeatmap({ habits, weekStart, locale }: { habits: Habit[]; weekStar
         </h2>
         <div className="flex gap-1 p-1 rounded-xl" style={{ backgroundColor: "var(--c-item)" }}>
           {rangeOptions.map(r => (
-            <button
-              key={r.key}
-              onClick={() => setRange(r.key)}
-              className="px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer"
-              style={{
-                backgroundColor: range === r.key ? "var(--c-card)" : "transparent",
-                color:           range === r.key ? "var(--c-text1)" : "var(--c-text3)",
-                boxShadow:       range === r.key ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
-              }}
-            >
-              {r.label}
-            </button>
+            r.key === "year" ? (
+              <div key="year" style={{ display: "flex", alignItems: "center" }}>
+                {range === "year" && (
+                  <button
+                    onClick={() => setHeatYear(y => y - 1)}
+                    disabled={heatYear <= accountYear}
+                    className="px-1 py-1 rounded-lg text-xs transition-all cursor-pointer disabled:opacity-30"
+                    style={{ backgroundColor: "transparent", color: "var(--c-text3)" }}
+                  >‹</button>
+                )}
+                <button
+                  onClick={() => setRange("year")}
+                  className="px-2 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer"
+                  style={{
+                    backgroundColor: range === "year" ? "var(--c-card)" : "transparent",
+                    color:           range === "year" ? "var(--c-text1)" : "var(--c-text3)",
+                    boxShadow:       range === "year" ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                  }}
+                >{heatYear}</button>
+                {range === "year" && (
+                  <button
+                    onClick={() => setHeatYear(y => y + 1)}
+                    disabled={heatYear >= currentYear}
+                    className="px-1 py-1 rounded-lg text-xs transition-all cursor-pointer disabled:opacity-30"
+                    style={{ backgroundColor: "transparent", color: "var(--c-text3)" }}
+                  >›</button>
+                )}
+              </div>
+            ) : (
+              <button
+                key={r.key}
+                onClick={() => setRange(r.key)}
+                className="px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer"
+                style={{
+                  backgroundColor: range === r.key ? "var(--c-card)" : "transparent",
+                  color:           range === r.key ? "var(--c-text1)" : "var(--c-text3)",
+                  boxShadow:       range === r.key ? "0 1px 4px rgba(0,0,0,0.10)" : "none",
+                }}
+              >
+                {r.label}
+              </button>
+            )
           ))}
         </div>
       </div>
