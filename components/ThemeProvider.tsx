@@ -203,6 +203,20 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
     } catch {}
   }, []);
 
+  // Apply theme when settings-updated fires (e.g. synced from Supabase on login)
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null;
+        const id: ThemeId = saved && saved in THEMES ? saved : "default";
+        setThemeState(id);
+        applyThemeVars(id);
+      } catch {}
+    };
+    window.addEventListener("settings-updated", handler);
+    return () => window.removeEventListener("settings-updated", handler);
+  }, []);
+
   function setTheme(id: ThemeId) {
     setThemeState(id);
     applyThemeVars(id);

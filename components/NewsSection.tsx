@@ -37,16 +37,17 @@ const FEEDS_EN: FeedConfig[] = [
 ];
 
 const FEEDS_ES: FeedConfig[] = [
-  { name: "El País",    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada", category: "world" },
-  { name: "El Mundo",   url: "https://e00-elmundo.uecdn.es/elmundo/rss/portada.xml",             category: "world" },
-  { name: "BBC Mundo",  url: "https://feeds.bbci.co.uk/mundo/rss.xml",                          category: "world" },
-  { name: "CNN Español",url: "https://cnnespanol.cnn.com/feed/",                                 category: "world" },
+  { name: "BBC Mundo",  url: "https://feeds.bbci.co.uk/mundo/rss.xml",                                         category: "world" },
+  { name: "CNN Español",url: "https://cnnespanol.cnn.com/feed/",                                               category: "world" },
+  { name: "El País",    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",               category: "world" },
+  { name: "DW Español", url: "https://rss.dw.com/rdf/rss-es-all",                                             category: "world" },
 ];
 
 const FEEDS_FR: FeedConfig[] = [
-  { name: "Le Monde",  url: "https://www.lemonde.fr/rss/une.xml",              category: "world" },
-  { name: "Le Figaro", url: "https://www.lefigaro.fr/rss/figaro_actualites.xml", category: "world" },
-  { name: "France 24", url: "https://www.france24.com/fr/rss",                 category: "world" },
+  { name: "France 24", url: "https://www.france24.com/fr/rss",                   category: "world" },
+  { name: "DW Français",url: "https://rss.dw.com/rdf/rss-fr-all",               category: "world" },
+  { name: "Le Monde",  url: "https://www.lemonde.fr/rss/une.xml",                category: "world" },
+  { name: "RFI",       url: "https://www.rfi.fr/fr/rss",                         category: "world" },
 ];
 
 const FEEDS_DE: FeedConfig[] = [
@@ -56,10 +57,10 @@ const FEEDS_DE: FeedConfig[] = [
 ];
 
 const FEEDS_ID: FeedConfig[] = [
-  { name: "Kompas",        url: "https://rss.kompas.com/money/xml/rssatm.xml",    category: "world" },
-  { name: "Detik",         url: "https://feed.detik.com/detikcom-index",          category: "world" },
   { name: "BBC Indonesia", url: "https://feeds.bbci.co.uk/indonesian/rss.xml",   category: "world" },
-  { name: "CNN Indonesia", url: "https://www.cnnindonesia.com/rss",               category: "world" },
+  { name: "DW Indonesia",  url: "https://rss.dw.com/rdf/rss-id-all",            category: "world" },
+  { name: "Kompas",        url: "https://rss.kompas.com/money/xml/rssatm.xml",   category: "world" },
+  { name: "CNN Indonesia", url: "https://www.cnnindonesia.com/rss",              category: "world" },
 ];
 
 const FEEDS_BY_LOCALE: Record<string, FeedConfig[]> = {
@@ -163,16 +164,16 @@ const TOPIC_PRIORITY = [
 ];
 
 const TOPIC_KEYWORDS: Record<string, string[]> = {
-  "Fashion":        ["fashion", "designer", "runway", "vogue", "couture", "clothing", "outfit", "collection", "streetwear"],
-  "Entertainment":  ["oscar", "grammy", "emmy", "bafta", "award", "celebrity", "movie", "film", "actor", "actress", "concert", "album", "box office", "hollywood", "netflix", "streaming"],
-  "Health":         ["health", "disease", "vaccine", "hospital", "medical", "virus", "cancer", "treatment", "pandemic", "drug", "fda"],
-  "Science":        ["research", "study", "space", "discovery", "scientist", "nasa", "biology", "physics", "asteroid", "planet", "gene"],
-  "Environment":    ["climate change", "environment", "carbon", "pollution", "renewable", "emissions", "wildfire", "deforestation"],
-  "War & Conflict": ["war", "conflict", "battle", "troops", "military", "missile", "bombing", "ceasefire", "invasion", "combat", "soldiers", "airstrike", "hostage"],
-  "Business":       ["market", "economy", "stock", "trade", "company", "finance", "gdp", "inflation", "bank", "investment", "earnings", "merger"],
-  "Sports":         ["sport", "game", "match", "team", "player", "tournament", "championship", "league", "nfl", "nba", "fifa", "olympic"],
-  "Technology":     ["tech", "artificial intelligence", "software", "apple", "google", "meta", "startup", "cybersecurity", "robot", "chip"],
-  "Politics":       ["election", "president", "government", "parliament", "minister", "vote", "senate", "congress", "policy", "diplomat", "white house"],
+  "Fashion":        ["fashion", "designer", "runway", "vogue", "couture", "streetwear", "fashion week"],
+  "Entertainment":  ["oscar", "grammy", "emmy", "bafta", "celebrity", "box office", "hollywood", "netflix", "streaming", "blockbuster", "box-office"],
+  "Health":         ["health", "disease", "vaccine", "hospital", "medical", "virus", "cancer", "treatment", "pandemic", "fda", "WHO", "outbreak"],
+  "Science":        ["space", "discovery", "nasa", "biology", "physics", "asteroid", "planet", "gene", "quantum", "scientists found", "new species"],
+  "Environment":    ["climate change", "carbon emissions", "pollution", "renewable energy", "wildfire", "deforestation", "global warming", "sea level"],
+  "War & Conflict": ["war", "battle", "troops", "military strike", "missile", "bombing", "ceasefire", "invasion", "airstrike", "hostage", "armed forces"],
+  "Business":       ["stock market", "economy", "gdp", "inflation", "trade war", "earnings", "merger", "acquisition", "central bank", "interest rate", "recession"],
+  "Sports":         ["sport", "tournament", "championship", "league", "nfl", "nba", "fifa", "olympic", "world cup", "grand prix", "transfer", "match result"],
+  "Technology":     ["artificial intelligence", "software", "apple", "google", "meta", "startup", "cybersecurity", "robot", "semiconductor", "tech giant", "elon musk"],
+  "Politics":       ["election", "president", "government", "parliament", "minister", "senate", "congress", "white house", "diplomatic", "sanctions", "summit"],
 };
 
 const TOPIC_I18N_KEYS: Record<string, string> = {

@@ -21,10 +21,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const fetchDisplayName = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('display_name')
+      .select('display_name, language, theme')
       .eq('id', userId)
       .single()
     setDisplayName(data?.display_name ?? null)
+    let changed = false
+    if (data?.language) {
+      try { localStorage.setItem('today-language', data.language); changed = true; } catch {}
+    }
+    if (data?.theme) {
+      try { localStorage.setItem('today-theme', data.theme); changed = true; } catch {}
+    }
+    if (changed) window.dispatchEvent(new CustomEvent('settings-updated'))
   }, [])
 
   useEffect(() => {

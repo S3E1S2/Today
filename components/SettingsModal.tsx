@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTheme, THEME_META } from "./ThemeProvider";
+import type { ThemeId } from "./ThemeProvider";
 import { useLanguage } from "./LanguageProvider";
+import { useAuth } from "./AuthProvider";
+import { supabase } from "@/lib/supabase";
 
 const WEEK_START_KEY = "today-week-start";
 const LANGUAGE_KEY   = "today-language";
@@ -52,6 +55,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 export default function SettingsModal() {
   const { theme, setTheme } = useTheme();
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [open, setOpen]         = useState(false);
   const [weekStart, setWeekStartState] = useState<0 | 1>(0);
   const [language,  setLanguageState]  = useState("en-US");
@@ -88,6 +92,18 @@ export default function SettingsModal() {
     setLanguageState(code);
     try { localStorage.setItem(LANGUAGE_KEY, code); } catch {}
     window.dispatchEvent(new CustomEvent("settings-updated"));
+    if (user) {
+      supabase.from("profiles").upsert({ id: user.id, language: code })
+        .then(({ error }) => { if (error) console.error("[Settings] language save failed:", error); });
+    }
+  }
+
+  function applyTheme(id: ThemeId) {
+    setTheme(id);
+    if (user) {
+      supabase.from("profiles").upsert({ id: user.id, theme: id })
+        .then(({ error }) => { if (error) console.error("[Settings] theme save failed:", error); });
+    }
   }
 
   return (
@@ -159,7 +175,7 @@ export default function SettingsModal() {
                 return (
                   <button
                     key={thm.id}
-                    onClick={() => setTheme(thm.id)}
+                    onClick={() => applyTheme(thm.id)}
                     className="flex items-center gap-4 w-full rounded-xl px-4 py-3 text-left transition-all cursor-pointer"
                     style={{
                       backgroundColor: selected ? "var(--c-done-bg)" : "var(--c-item)",
