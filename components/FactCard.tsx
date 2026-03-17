@@ -29,16 +29,43 @@ function RefreshIcon() {
   );
 }
 
-async function loadFact(): Promise<Fact> {
-  const r = await fetch("https://uselessfacts.jsph.pl/api/v2/facts/random?language=en", {
+// API supports "en" and "de" natively; others we translate via MyMemory
+const LOCALE_TO_API_LANG: Record<string, string> = { "de-DE": "de" };
+const LOCALE_TO_TRANSLATE: Record<string, string> = {
+  "es-ES": "en|es",
+  "fr-FR": "en|fr",
+  "id-ID": "en|id",
+};
+
+async function translateText(text: string, langpair: string): Promise<string> {
+  const res = await fetch(
+    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${langpair}`
+  );
+  if (!res.ok) return text;
+  const data = await res.json() as { responseData?: { translatedText?: string }; responseStatus?: number };
+  const translated = data?.responseData?.translatedText;
+  if (!translated || data?.responseStatus === 403) return text;
+  return translated;
+}
+
+async function loadFact(locale: string): Promise<Fact> {
+  const apiLang = LOCALE_TO_API_LANG[locale] ?? "en";
+  const r = await fetch(`https://uselessfacts.jsph.pl/api/v2/facts/random?language=${apiLang}`, {
     cache: "no-store",
   });
   if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.json();
+  const fact: Fact = await r.json();
+
+  const langpair = LOCALE_TO_TRANSLATE[locale];
+  if (langpair) {
+    fact.text = await translateText(fact.text, langpair);
+  }
+
+  return fact;
 }
 
 export default function FactCard() {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
   const [fact,       setFact]       = useState<Fact | null>(null);
   const [loading,    setLoading]    = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -49,7 +76,7 @@ export default function FactCard() {
     else setLoading(true);
     setError(null);
     try {
-      setFact(await loadFact());
+      setFact(await loadFact(locale));
     } catch (e) {
       setError(String(e));
     } finally {
@@ -58,7 +85,7 @@ export default function FactCard() {
     }
   };
 
-  useEffect(() => { fetchFact(); }, []);
+  useEffect(() => { fetchFact(); }, [locale]);
 
   return (
     <div className="card p-6 flex flex-col gap-4">

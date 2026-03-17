@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLanguage } from "./LanguageProvider";
 
 /* ── Types ─────────────────────────────────────────────────────────────────── */
@@ -69,28 +69,6 @@ const FEEDS_BY_LOCALE: Record<string, FeedConfig[]> = {
   "de-DE": FEEDS_DE,
   "id-ID": FEEDS_ID,
 };
-
-// Source language code for MyMemory translate-to-EN
-const SOURCE_LANG: Record<string, string> = {
-  "es-ES": "es",
-  "fr-FR": "fr",
-  "de-DE": "de",
-  "id-ID": "id",
-};
-
-/* ── Translation helper ────────────────────────────────────────────────────── */
-
-async function translateText(text: string, langpair: string): Promise<string> {
-  if (!text.trim()) return text;
-  const res = await fetch(
-    `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text.slice(0, 500))}&langpair=${langpair}`
-  );
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json() as { responseData?: { translatedText?: string }; responseStatus?: number };
-  const translated = data?.responseData?.translatedText;
-  if (!translated || data?.responseStatus === 403) throw new Error("Translation unavailable");
-  return translated;
-}
 
 /* ── Proxy helpers ─────────────────────────────────────────────────────────── */
 
@@ -290,23 +268,13 @@ function RefreshIcon({ spinning }: { spinning?: boolean }) {
   );
 }
 
-function GlobeIcon() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="2" y1="12" x2="22" y2="12"/>
-      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-    </svg>
-  );
-}
 
 /* ── NewsSection ───────────────────────────────────────────────────────────── */
 
 export default function NewsSection() {
   const { t, locale } = useLanguage();
 
-  const activeFeeds  = FEEDS_BY_LOCALE[locale] ?? FEEDS_EN;
-  const sourceLang   = SOURCE_LANG[locale] ?? null; // non-null only for non-English locales
+  const activeFeeds = FEEDS_BY_LOCALE[locale] ?? FEEDS_EN;
 
   const [allArticles,   setAllArticles]   = useState<Article[]>([]);
   const [displayArticles, setDisplayArticles] = useState<Article[]>([]);
@@ -314,11 +282,6 @@ export default function NewsSection() {
   const [loadedCount,   setLoadedCount]   = useState(0);
   const [failedSources, setFailedSources] = useState<string[]>([]);
   const [refreshKey,    setRefreshKey]    = useState(0);
-  const [translating,   setTranslating]   = useState(false);
-  const [translateToEn, setTranslateToEn] = useState(false);
-
-  // Cache: articleId → { title } (English translations)
-  const enCache = useRef<Map<string, string>>(new Map());
 
   // Filters
   const [category,     setCategory]     = useState<"all" | "world" | "sports">("all");
@@ -351,8 +314,6 @@ export default function NewsSection() {
     setDisplayArticles([]);
     setFailedSources([]);
     setLoadedCount(0);
-    setTranslateToEn(false);
-    enCache.current.clear();
 
     const feeds = FEEDS_BY_LOCALE[locale] ?? FEEDS_EN;
     console.log(`[News] Fetching ${feeds.length} feeds for locale: ${locale}`);
@@ -387,56 +348,10 @@ export default function NewsSection() {
     return () => { alive = false; };
   }, [refreshKey, locale]);
 
-  // ── Translate-to-English effect ────────────────────────────────────────────
+  // Sync displayArticles with allArticles
   useEffect(() => {
-    if (!translateToEn || !sourceLang || allArticles.length === 0) {
-      setDisplayArticles(allArticles);
-      return;
-    }
-
-    // Apply cache immediately to avoid blank flash
-    const applyCache = (articles: Article[]) =>
-      articles.map(a => {
-        const en = enCache.current.get(a.id);
-        return en ? { ...a, title: en, originalTitle: a.originalTitle ?? a.title } : a;
-      });
-
-    setDisplayArticles(applyCache(allArticles));
-
-    const toTranslate = allArticles.filter(a => !enCache.current.has(a.id));
-    if (toTranslate.length === 0) return;
-
-    const langpair = `${sourceLang}|en`;
-    let cancelled = false;
-    setTranslating(true);
-
-    (async () => {
-      const BATCH = 5;
-      for (let i = 0; i < toTranslate.length; i += BATCH) {
-        if (cancelled) break;
-        const chunk = toTranslate.slice(i, i + BATCH);
-        await Promise.allSettled(chunk.map(async (a) => {
-          const nativeTitle = a.originalTitle ?? a.title;
-          try {
-            const translated = await translateText(nativeTitle, langpair);
-            enCache.current.set(a.id, translated);
-          } catch {
-            enCache.current.set(a.id, nativeTitle); // fallback: store native so we don't retry
-          }
-        }));
-        if (!cancelled) setDisplayArticles(applyCache(allArticles));
-        if (i + BATCH < toTranslate.length) await new Promise(r => setTimeout(r, 300));
-      }
-      if (!cancelled) setTranslating(false);
-    })();
-
-    return () => { cancelled = true; };
-  }, [allArticles, translateToEn, sourceLang]);
-
-  // When toggle turns off, revert to originals
-  useEffect(() => {
-    if (!translateToEn) setDisplayArticles(allArticles);
-  }, [translateToEn, allArticles]);
+    setDisplayArticles(allArticles);
+  }, [allArticles]);
 
   // Apply filters
   const filtered = useMemo(() => {
@@ -460,33 +375,10 @@ export default function NewsSection() {
           {t("news.title")}
         </h2>
 
-        {/* Translate-to-EN toggle — only for non-English locales */}
-        {sourceLang && !loading && allArticles.length > 0 && (
-          <button
-            onClick={() => setTranslateToEn(v => !v)}
-            disabled={translating}
-            title={translateToEn ? t("news.translateOff") : t("news.translateOn")}
-            style={{
-              display: "flex", alignItems: "center", gap: "0.3rem",
-              fontSize: "0.75rem", fontWeight: 500, cursor: translating ? "default" : "pointer",
-              padding: "0.25rem 0.625rem", borderRadius: "9999px",
-              border: `1.5px solid ${translateToEn ? "var(--c-accent)" : "var(--c-border)"}`,
-              backgroundColor: translateToEn ? "var(--c-accent)" : "transparent",
-              color: translateToEn ? "var(--c-accent-fg)" : "var(--c-text3)",
-              opacity: translating ? 0.6 : 1,
-              transition: "all 0.15s",
-            }}
-          >
-            <GlobeIcon /> EN
-          </button>
-        )}
-
-        {/* Feed / translating status */}
+        {/* Feed status */}
         <span className="text-xs tabular-nums" style={{ color: "var(--c-text3)" }}>
           {loading
             ? t("news.loading", { loaded: loadedCount, total: activeFeeds.length })
-            : translating
-            ? t("news.translating")
             : failedSources.length > 0
             ? t("news.sourcesFailed", { ok: activeFeeds.length - failedSources.length, total: activeFeeds.length })
             : t("news.sources", { total: activeFeeds.length })}
