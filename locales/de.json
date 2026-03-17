@@ -115,5 +115,15 @@
   "fact.title": "Wussten Sie schon?",
   "fact.another": "Noch einer",
   "fact.error": "Ein Fakt konnte gerade nicht geladen werden.",
-  "fact.via": "via"
+  "fact.via": "via",
+
+  "auth.subtitle": "Dein persönliches Morgen-Dashboard",
+  "auth.signin": "Anmelden",
+  "auth.signup": "Registrieren",
+  "auth.email": "E-Mail",
+  "auth.password": "Passwort",
+  "auth.createAccount": "Konto erstellen",
+  "auth.signingIn": "Wird angemeldet…",
+  "auth.creating": "Wird erstellt…",
+  "auth.guest": "Als Gast fortfahren →"
 }

@@ -115,5 +115,15 @@
   "fact.title": "Le saviez-vous ?",
   "fact.another": "Autre",
   "fact.error": "Impossible de charger un fait pour le moment.",
-  "fact.via": "via"
+  "fact.via": "via",
+
+  "auth.subtitle": "Votre tableau de bord matinal personnel",
+  "auth.signin": "Se connecter",
+  "auth.signup": "S'inscrire",
+  "auth.email": "E-mail",
+  "auth.password": "Mot de passe",
+  "auth.createAccount": "Créer un compte",
+  "auth.signingIn": "Connexion…",
+  "auth.creating": "Création…",
+  "auth.guest": "Continuer en tant qu'invité →"
 }

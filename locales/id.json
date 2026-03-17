@@ -115,5 +115,15 @@
   "fact.title": "Tahukah Kamu?",
   "fact.another": "Lainnya",
   "fact.error": "Tidak dapat memuat fakta saat ini.",
-  "fact.via": "via"
+  "fact.via": "via",
+
+  "auth.subtitle": "Dashboard pagi pribadi Anda",
+  "auth.signin": "Masuk",
+  "auth.signup": "Daftar",
+  "auth.email": "Email",
+  "auth.password": "Kata sandi",
+  "auth.createAccount": "Buat akun",
+  "auth.signingIn": "Sedang masuk…",
+  "auth.creating": "Sedang membuat…",
+  "auth.guest": "Lanjutkan sebagai tamu →"
 }

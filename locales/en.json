@@ -115,5 +115,15 @@
   "fact.title": "Did You Know?",
   "fact.another": "Another",
   "fact.error": "Could not load a fact right now.",
-  "fact.via": "via"
+  "fact.via": "via",
+
+  "auth.subtitle": "Your personal morning dashboard",
+  "auth.signin": "Sign in",
+  "auth.signup": "Sign up",
+  "auth.email": "Email",
+  "auth.password": "Password",
+  "auth.createAccount": "Create account",
+  "auth.signingIn": "Signing in…",
+  "auth.creating": "Creating…",
+  "auth.guest": "Continue as guest →"
 }

@@ -115,5 +115,15 @@
   "fact.title": "¿Sabías que?",
   "fact.another": "Otro",
   "fact.error": "No se pudo cargar un dato ahora mismo.",
-  "fact.via": "vía"
+  "fact.via": "vía",
+
+  "auth.subtitle": "Tu panel matutino personal",
+  "auth.signin": "Iniciar sesión",
+  "auth.signup": "Registrarse",
+  "auth.email": "Correo electrónico",
+  "auth.password": "Contraseña",
+  "auth.createAccount": "Crear cuenta",
+  "auth.signingIn": "Iniciando sesión…",
+  "auth.creating": "Creando…",
+  "auth.guest": "Continuar como invitado →"
 }

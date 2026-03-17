@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
+import { useLanguage } from "@/components/LanguageProvider";
 
 const LANGUAGES = [
   { code: "en-US", label: "EN" },
@@ -11,7 +12,18 @@ const LANGUAGES = [
   { code: "id-ID", label: "ID" },
 ];
 
+function GlobeIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+    </svg>
+  );
+}
+
 export default function AuthPage() {
+  const { t } = useLanguage();
   const [mode,     setMode]     = useState<"signin" | "signup">("signin");
   const [email,    setEmail]    = useState("");
   const [password, setPassword] = useState("");
@@ -24,9 +36,11 @@ export default function AuthPage() {
     try { setLanguage(localStorage.getItem("today-language") || "en-US"); } catch {}
   }, []);
 
-  function applyLanguage(code: string) {
-    setLanguage(code);
-    try { localStorage.setItem("today-language", code); } catch {}
+  function cycleLanguage() {
+    const idx = LANGUAGES.findIndex(l => l.code === language);
+    const next = LANGUAGES[(idx + 1) % LANGUAGES.length];
+    setLanguage(next.code);
+    try { localStorage.setItem("today-language", next.code); } catch {}
     window.dispatchEvent(new CustomEvent("settings-updated"));
   }
 
@@ -39,7 +53,6 @@ export default function AuthPage() {
     try {
       if (mode === "signup") {
         const { data, error } = await supabase.auth.signUp({ email, password });
-        console.log("[Auth] signUp data:", data, "error:", error);
 
         if (error) {
           setError(error.message);
@@ -52,11 +65,8 @@ export default function AuthPage() {
           return;
         }
 
-        // No session yet (e.g. email confirmation pending — shouldn't happen
-        // if confirmation is disabled, but handle gracefully)
         setInfo("Account created — signing you in…");
         const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-        console.log("[Auth] post-signup signIn:", signInData, signInErr);
         if (signInData.session) {
           window.location.href = "/";
         } else {
@@ -67,7 +77,6 @@ export default function AuthPage() {
 
       // Sign in
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      console.log("[Auth] signIn data:", data, "error:", error);
 
       if (error && error.message !== "Email not confirmed") {
         setError(error.message);
@@ -80,9 +89,7 @@ export default function AuthPage() {
         return;
       }
 
-      // "Email not confirmed" path — session may still exist in storage
       const { data: { session } } = await supabase.auth.getSession();
-      console.log("[Auth] getSession after signIn:", session);
       if (session) {
         window.location.href = "/";
       } else {
@@ -96,6 +103,8 @@ export default function AuthPage() {
     }
   }
 
+  const currentLangLabel = LANGUAGES.find(l => l.code === language)?.label ?? "EN";
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -107,12 +116,33 @@ export default function AuthPage() {
     }}>
       <div style={{ width: "100%", maxWidth: 380 }}>
 
+        {/* Language button — top right corner */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "0.75rem" }}>
+          <button
+            type="button"
+            onClick={cycleLanguage}
+            title="Change language"
+            style={{
+              display: "flex", alignItems: "center", gap: "0.375rem",
+              padding: "0.375rem 0.75rem", borderRadius: "9999px",
+              fontSize: "0.75rem", fontWeight: 500, cursor: "pointer",
+              backgroundColor: "var(--c-card)", color: "var(--c-text3)",
+              border: "1px solid var(--c-border)", boxShadow: "var(--c-shadow)",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = "var(--c-accent)")}
+            onMouseLeave={e => (e.currentTarget.style.color = "var(--c-text3)")}
+          >
+            <GlobeIcon />
+            {currentLangLabel}
+          </button>
+        </div>
+
         <div style={{ textAlign: "center", marginBottom: "2rem" }}>
           <h1 style={{ fontSize: "1.75rem", fontWeight: 700, color: "var(--c-text1)", letterSpacing: "-0.02em" }}>
             Today ☀️
           </h1>
           <p style={{ fontSize: "0.875rem", color: "var(--c-text3)", marginTop: "0.375rem" }}>
-            Your personal morning dashboard
+            {t("auth.subtitle")}
           </p>
         </div>
 
@@ -123,30 +153,6 @@ export default function AuthPage() {
           padding: "1.75rem",
           boxShadow: "var(--c-shadow-h)",
         }}>
-
-          {/* Language picker */}
-          <div style={{ display: "flex", justifyContent: "center", gap: "0.375rem", marginBottom: "1.25rem" }}>
-            {LANGUAGES.map(lang => (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => applyLanguage(lang.code)}
-                style={{
-                  padding: "0.25rem 0.625rem",
-                  borderRadius: "9999px",
-                  fontSize: "0.75rem",
-                  fontWeight: language === lang.code ? 700 : 400,
-                  cursor: "pointer",
-                  border: `1.5px solid ${language === lang.code ? "var(--c-accent)" : "var(--c-border)"}`,
-                  backgroundColor: language === lang.code ? "var(--c-accent)" : "transparent",
-                  color: language === lang.code ? "var(--c-accent-fg)" : "var(--c-text3)",
-                  transition: "all 0.15s",
-                }}
-              >
-                {lang.label}
-              </button>
-            ))}
-          </div>
 
           {/* Mode toggle */}
           <div style={{
@@ -167,14 +173,14 @@ export default function AuthPage() {
                   transition: "all 0.15s",
                 }}
               >
-                {m === "signin" ? "Sign in" : "Sign up"}
+                {m === "signin" ? t("auth.signin") : t("auth.signup")}
               </button>
             ))}
           </div>
 
           <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
             <label style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--c-text3)" }}>Email</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--c-text3)" }}>{t("auth.email")}</span>
               <input
                 type="email"
                 value={email}
@@ -187,7 +193,7 @@ export default function AuthPage() {
             </label>
 
             <label style={{ display: "flex", flexDirection: "column", gap: "0.375rem" }}>
-              <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--c-text3)" }}>Password</span>
+              <span style={{ fontSize: "0.75rem", fontWeight: 500, color: "var(--c-text3)" }}>{t("auth.password")}</span>
               <input
                 type="password"
                 value={password}
@@ -221,7 +227,9 @@ export default function AuthPage() {
                 opacity: busy ? 0.6 : 1, cursor: busy ? "default" : "pointer",
               }}
             >
-              {busy ? "…" : mode === "signin" ? "Sign in" : "Create account"}
+              {busy
+                ? (mode === "signin" ? t("auth.signingIn") : t("auth.creating"))
+                : (mode === "signin" ? t("auth.signin") : t("auth.createAccount"))}
             </button>
           </form>
 
@@ -233,7 +241,13 @@ export default function AuthPage() {
 
           <button
             type="button"
-            onClick={() => { window.location.href = "/"; }}
+            onClick={() => {
+              try {
+                localStorage.setItem("today-language", "en-US");
+                localStorage.setItem("today-theme", "default");
+              } catch {}
+              window.location.href = "/";
+            }}
             style={{
               width: "100%", padding: "0.625rem", borderRadius: "0.625rem",
               fontSize: "0.875rem", fontWeight: 500, cursor: "pointer",
@@ -243,7 +257,7 @@ export default function AuthPage() {
             onMouseEnter={(e) => (e.currentTarget.style.borderColor = "var(--c-accent)")}
             onMouseLeave={(e) => (e.currentTarget.style.borderColor = "var(--c-border)")}
           >
-            Continue as guest →
+            {t("auth.guest")}
           </button>
 
         </div>
