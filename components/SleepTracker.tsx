@@ -142,18 +142,18 @@ function WeeklyChart({ entries, goal, t, chartType }: {
     }
 
     const entryMap = new Map(entries.map(e => [e.date, e]));
-    const hours  = days.map(d => entryMap.get(d.date)?.hours ?? 0);
-    const colors = hours.map(h => h >= goal ? accentColor : (h === 0 ? skelColor : text3Color));
+    const rawHours = days.map(d => entryMap.get(d.date)?.hours ?? 0);
+    const hours    = rawHours.map(h => h === 0 ? 0 : Math.min(h, 12));
+    const colors   = rawHours.map(h => h >= goal ? accentColor : (h === 0 ? skelColor : text3Color));
     const lineHours = hours.map(h => h === 0 ? null : h);
 
     const sharedTooltip = {
       callbacks: {
         label: (item: TooltipItem<"bar" | "line">) => {
-          const h = item.raw as number | null;
-          if (!h || h === 0) return "–";
           const entry = entryMap.get(days[item.dataIndex].date);
-          const lines: string[] = [t("sleep.hSlept", { hours: h })];
-          if (entry) lines.push(`${t(scoreLabelKey(entry.score))} · ${entry.score}/100`);
+          if (!entry || entry.hours === 0) return "–";
+          const lines: string[] = [t("sleep.hSlept", { hours: entry.hours })];
+          lines.push(`${t(scoreLabelKey(entry.score))} · ${entry.score}/100`);
           return lines;
         },
       },
@@ -172,12 +172,12 @@ function WeeklyChart({ entries, goal, t, chartType }: {
       },
       y: {
         min: 0,
-        max: Math.max(12, goal + 2),
+        max: 12,
         grid:   { color: borderColor },
         border: { display: false, dash: [4, 4] },
         ticks: {
           color: text3Color, font: { size: 11 },
-          stepSize: 2, callback: (v: number | string) => `${v}h`,
+          stepSize: 2, callback: (v: number | string) => v === 12 ? "12+" : `${v}h`,
         },
       },
     };
@@ -186,7 +186,7 @@ function WeeklyChart({ entries, goal, t, chartType }: {
       id: "goalLine",
       afterDraw(chart: Chart) {
         const { ctx, chartArea: { left, right }, scales: { y } } = chart;
-        const yPos = y.getPixelForValue(goal);
+        const yPos = y.getPixelForValue(Math.min(goal, 12));
         ctx.save();
         ctx.beginPath();
         ctx.setLineDash([5, 5]);
