@@ -183,13 +183,17 @@ export default function AccountButton() {
     // Verify password first
     const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: resetPassword });
     if (authErr) { setResetError("Incorrect password."); setResetting(false); return; }
-    // Wipe profile
+    // Wipe all Supabase data
+    await supabase.from("sleep_entries").delete().eq("user_id", user.id);
     await supabase.from("profiles").upsert({
-      id: user.id, display_name: null, avatar_color: null, avatar_url: null, emoji: null,
+      id: user.id, display_name: null, avatar_color: null, avatar_url: null,
+      emoji: null, theme: "default", language: "en-US",
     });
-    setSavedName(null); setSavedColor(AVATAR_COLORS[0]); setSavedAvatar(null); setSavedEmoji(null);
-    setDisplayName(null); setEmoji(null);
-    setResetting(false); setResetStep(0); setResetPassword(""); setOpen(false);
+    // Wipe all localStorage
+    try { localStorage.clear(); } catch {}
+    // Sign out and redirect
+    await supabase.auth.signOut();
+    window.location.href = "/auth";
   }
 
   if (!user) {
