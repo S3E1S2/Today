@@ -359,7 +359,10 @@ export default function NewsSection() {
     let result = displayArticles;
     if (category !== "all") result = result.filter(a => a.category === category);
     if (activeTopic !== null) {
-      result = result.filter(a => detectPrimaryTopic(a.title, a.description) === activeTopic);
+      result = result.filter(a => {
+        const text = `${a.title} ${a.description}`.toLowerCase();
+        return TOPIC_KEYWORDS[activeTopic!]?.some(kw => text.includes(kw)) ?? false;
+      });
     }
     return result.slice(0, 10);
   }, [displayArticles, category, activeTopic]);

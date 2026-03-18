@@ -8,6 +8,10 @@ import {
   Chart,
   BarController,
   BarElement,
+  LineController,
+  LineElement,
+  PointElement,
+  Filler,
   CategoryScale,
   LinearScale,
   Tooltip,
@@ -15,7 +19,7 @@ import {
   type TooltipItem,
 } from "chart.js";
 
-Chart.register(BarController, BarElement, CategoryScale, LinearScale, Tooltip);
+Chart.register(BarController, BarElement, LineController, LineElement, PointElement, Filler, CategoryScale, LinearScale, Tooltip);
 
 /* ── Types & constants ─────────────────────────────────────────────────────── */
 
@@ -105,9 +109,14 @@ function ChevronDown() {
   );
 }
 
-/* ── Weekly bar chart ──────────────────────────────────────────────────────── */
+/* ── Weekly chart (bar or line) ────────────────────────────────────────────── */
 
-function WeeklyChart({ entries, goal, t }: { entries: SleepEntry[]; goal: number; t: (key: string, vars?: Record<string, string | number>) => string }) {
+function WeeklyChart({ entries, goal, t, chartType }: {
+  entries: SleepEntry[];
+  goal: number;
+  t: (key: string, vars?: Record<string, string | number>) => string;
+  chartType: "bar" | "line";
+}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const chartRef  = useRef<Chart | null>(null);
 
@@ -135,82 +144,103 @@ function WeeklyChart({ entries, goal, t }: { entries: SleepEntry[]; goal: number
     const entryMap = new Map(entries.map(e => [e.date, e]));
     const hours  = days.map(d => entryMap.get(d.date)?.hours ?? 0);
     const colors = hours.map(h => h >= goal ? accentColor : (h === 0 ? skelColor : text3Color));
+    const lineHours = hours.map(h => h === 0 ? null : h);
 
-    const config: ChartConfiguration<"bar"> = {
-      type: "bar",
-      data: {
-        labels: days.map(d => d.label),
-        datasets: [
-          {
-            data: hours,
-            backgroundColor: colors,
-            borderRadius: 6,
-            borderSkipped: false,
-            maxBarThickness: 32,
-          },
-        ],
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        animation: { duration: 300 },
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            callbacks: {
-              label: (item: TooltipItem<"bar">) => {
-                const h = item.raw as number;
-                return h > 0 ? t("sleep.hSlept", { hours: h }) : "–";
-              },
-            },
-            backgroundColor: "rgba(0,0,0,0.75)",
-            titleColor: "#fff",
-            bodyColor:  "#ccc",
-            padding: 8,
-            cornerRadius: 8,
-          },
-        },
-        scales: {
-          x: {
-            grid:  { display: false },
-            border: { display: false },
-            ticks: { color: text3Color, font: { size: 11 } },
-          },
-          y: {
-            min: 0,
-            max: Math.max(12, goal + 2),
-            grid:  { color: borderColor },
-            border: { display: false, dash: [4, 4] },
-            ticks: {
-              color: text3Color,
-              font:  { size: 11 },
-              stepSize: 2,
-              callback: (v) => `${v}h`,
-            },
-          },
+    const sharedTooltip = {
+      callbacks: {
+        label: (item: TooltipItem<"bar" | "line">) => {
+          const h = item.raw as number | null;
+          return h && h > 0 ? t("sleep.hSlept", { hours: h }) : "–";
         },
       },
-      plugins: [
-        {
-          // Goal line drawn manually
-          id: "goalLine",
-          afterDraw(chart) {
-            const { ctx, chartArea: { left, right }, scales: { y } } = chart;
-            const yPos = y.getPixelForValue(goal);
-            ctx.save();
-            ctx.beginPath();
-            ctx.setLineDash([5, 5]);
-            ctx.moveTo(left, yPos);
-            ctx.lineTo(right, yPos);
-            ctx.strokeStyle = text1Color;
-            ctx.globalAlpha = 0.35;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.restore();
-          },
-        },
-      ],
+      backgroundColor: "rgba(0,0,0,0.75)",
+      titleColor: "#fff",
+      bodyColor:  "#ccc",
+      padding: 8,
+      cornerRadius: 8,
     };
+
+    const sharedScales = {
+      x: {
+        grid:   { display: false },
+        border: { display: false },
+        ticks:  { color: text3Color, font: { size: 11 } },
+      },
+      y: {
+        min: 0,
+        max: Math.max(12, goal + 2),
+        grid:   { color: borderColor },
+        border: { display: false, dash: [4, 4] },
+        ticks: {
+          color: text3Color, font: { size: 11 },
+          stepSize: 2, callback: (v: number | string) => `${v}h`,
+        },
+      },
+    };
+
+    const goalLinePlugin = {
+      id: "goalLine",
+      afterDraw(chart: Chart) {
+        const { ctx, chartArea: { left, right }, scales: { y } } = chart;
+        const yPos = y.getPixelForValue(goal);
+        ctx.save();
+        ctx.beginPath();
+        ctx.setLineDash([5, 5]);
+        ctx.moveTo(left, yPos);
+        ctx.lineTo(right, yPos);
+        ctx.strokeStyle = text1Color;
+        ctx.globalAlpha = 0.35;
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+      },
+    };
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let config: any;
+
+    if (chartType === "line") {
+      config = {
+        type: "line",
+        data: {
+          labels: days.map(d => d.label),
+          datasets: [{
+            data: lineHours,
+            borderColor: accentColor,
+            backgroundColor: `${accentColor}28`,
+            tension: 0.4,
+            pointBackgroundColor: hours.map(h => h >= goal ? accentColor : text3Color),
+            pointBorderColor: "transparent",
+            pointRadius: hours.map(h => h === 0 ? 0 : 5),
+            pointHoverRadius: 7,
+            fill: true,
+            spanGaps: false,
+          }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: { legend: { display: false }, tooltip: sharedTooltip },
+          scales: sharedScales,
+        },
+        plugins: [goalLinePlugin],
+      };
+    } else {
+      config = {
+        type: "bar",
+        data: {
+          labels: days.map(d => d.label),
+          datasets: [{ data: hours, backgroundColor: colors, borderRadius: 6, borderSkipped: false, maxBarThickness: 32 }],
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 300 },
+          plugins: { legend: { display: false }, tooltip: sharedTooltip },
+          scales: sharedScales,
+        },
+        plugins: [goalLinePlugin],
+      };
+    }
 
     if (chartRef.current) {
       chartRef.current.destroy();
@@ -221,7 +251,7 @@ function WeeklyChart({ entries, goal, t }: { entries: SleepEntry[]; goal: number
       chartRef.current?.destroy();
       chartRef.current = null;
     };
-  }, [entries, goal, t]);
+  }, [entries, goal, t, chartType]);
 
   return (
     <div style={{ position: "relative", height: 140 }}>
@@ -248,6 +278,7 @@ export default function SleepTracker() {
   // UI state
   const [showGoal, setShowGoal] = useState(false);
   const [goalDraft, setGoalDraft] = useState("8");
+  const [chartType, setChartType] = useState<"bar" | "line">("bar");
 
   useEffect(() => {
     const g = loadGoal();
@@ -485,11 +516,43 @@ export default function SleepTracker() {
             <span className="text-xs font-medium" style={{ color: "var(--c-text3)" }}>
               {t("sleep.last7days")}
             </span>
-            <span className="text-xs" style={{ color: "var(--c-text3)" }}>
-              {t("sleep.chartGoal", { goal })}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs" style={{ color: "var(--c-text3)" }}>
+                {t("sleep.chartGoal", { goal })}
+              </span>
+              <div className="flex rounded-lg overflow-hidden" style={{ border: "1px solid var(--c-border)" }}>
+                <button
+                  onClick={() => setChartType("bar")}
+                  title="Bar chart"
+                  style={{
+                    padding: "0.2rem 0.45rem", cursor: "pointer", border: "none",
+                    backgroundColor: chartType === "bar" ? "var(--c-accent)" : "transparent",
+                    color: chartType === "bar" ? "#fff" : "var(--c-text3)",
+                    display: "flex", alignItems: "center",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+                    <rect x="2" y="10" width="5" height="12"/><rect x="9.5" y="6" width="5" height="16"/><rect x="17" y="2" width="5" height="20"/>
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setChartType("line")}
+                  title="Line chart"
+                  style={{
+                    padding: "0.2rem 0.45rem", cursor: "pointer", border: "none",
+                    backgroundColor: chartType === "line" ? "var(--c-accent)" : "transparent",
+                    color: chartType === "line" ? "#fff" : "var(--c-text3)",
+                    display: "flex", alignItems: "center",
+                  }}
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 17 8 10 13 13 21 5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
-          <WeeklyChart entries={entries} goal={goal} t={t} />
+          <WeeklyChart entries={entries} goal={goal} t={t} chartType={chartType} />
         </div>
       )}
     </div>
