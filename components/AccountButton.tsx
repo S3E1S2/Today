@@ -191,8 +191,12 @@ export default function AccountButton() {
       emoji: null, theme: "default", language: "en-US",
     });
     if (profileErr) console.error("[Reset] profile upsert failed:", profileErr);
-    // Wipe all localStorage
-    try { localStorage.clear(); } catch {}
+    // Wipe app localStorage keys (not Supabase auth tokens)
+    try {
+      Object.keys(localStorage)
+        .filter(k => k.startsWith("today-"))
+        .forEach(k => localStorage.removeItem(k));
+    } catch {}
     // Stay signed in, reload fresh
     window.location.href = "/";
   }
