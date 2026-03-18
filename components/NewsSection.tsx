@@ -38,7 +38,7 @@ const FEEDS_EN: FeedConfig[] = [
 
 const FEEDS_ES: FeedConfig[] = [
   { name: "BBC Mundo",  url: "https://feeds.bbci.co.uk/mundo/rss.xml",                                         category: "world" },
-  { name: "CNN Español",url: "https://cnnespanol.cnn.com/feed/",                                               category: "world" },
+  { name: "France 24 ES",url: "https://www.france24.com/es/rss",                                              category: "world" },
   { name: "El País",    url: "https://feeds.elpais.com/mrss-s/pages/ep/site/elpais.com/portada",               category: "world" },
   { name: "DW Español", url: "https://rss.dw.com/rdf/rss-es-all",                                             category: "world" },
 ];
@@ -57,9 +57,9 @@ const FEEDS_DE: FeedConfig[] = [
 ];
 
 const FEEDS_ID: FeedConfig[] = [
-  { name: "BBC Indonesia", url: "https://feeds.bbci.co.uk/indonesian/rss.xml",   category: "world" },
+  { name: "VOA Indonesia", url: "https://www.voaindonesia.com/api/zmoqieo$tm",   category: "world" },
   { name: "DW Indonesia",  url: "https://rss.dw.com/rdf/rss-id-all",            category: "world" },
-  { name: "Kompas",        url: "https://rss.kompas.com/money/xml/rssatm.xml",   category: "world" },
+  { name: "Antara",        url: "https://www.antaranews.com/rss/terkini.xml",    category: "world" },
   { name: "CNN Indonesia", url: "https://www.cnnindonesia.com/rss",              category: "world" },
 ];
 

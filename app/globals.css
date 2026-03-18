@@ -93,3 +93,5 @@ body {
 }
 .th-btn:hover:not(:disabled) { background-color: var(--c-accent2); }
 .th-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.hint-info-wrap:hover .hint-tooltip { opacity: 1 !important; }

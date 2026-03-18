@@ -71,7 +71,7 @@ function AvatarCircle({ avatarUrl, initials, color, size = 36 }: {
 }
 
 export default function AccountButton() {
-  const { user, setDisplayName, setEmoji, refreshProfile } = useAuth();
+  const { user, setDisplayName, setEmoji } = useAuth();
   const { t }    = useLanguage();
   const router   = useRouter();
   const wrapRef  = useRef<HTMLDivElement>(null);
@@ -93,6 +93,11 @@ export default function AccountButton() {
   const [editEmoji,  setEditEmoji]  = useState<string | null>(null);
   const [savedEmoji, setSavedEmoji] = useState<string | null>(null);
 
+  // Password hint
+  const [savedHint,    setSavedHint]    = useState<string | null>(null);
+  const [editHint,     setEditHint]     = useState("");
+  const [savingHint,   setSavingHint]   = useState(false);
+
   // Reset flow
   const [resetStep,     setResetStep]     = useState(0); // 0=idle 1-3=confirmations 4=password
   const [resetPassword, setResetPassword] = useState("");
@@ -104,7 +109,7 @@ export default function AccountButton() {
     if (!user) return;
     supabase
       .from("profiles")
-      .select("display_name, avatar_color, avatar_url, emoji")
+      .select("display_name, avatar_color, avatar_url, emoji, password_hint")
       .eq("id", user.id)
       .single()
       .then(({ data }) => {
@@ -113,6 +118,7 @@ export default function AccountButton() {
           setSavedColor(data.avatar_color ?? AVATAR_COLORS[0]);
           setSavedAvatar(data.avatar_url ?? null);
           setSavedEmoji(data.emoji ?? null);
+          setSavedHint(data.password_hint ?? null);
         }
       });
   }, [user?.id]);
@@ -124,8 +130,9 @@ export default function AccountButton() {
       setAvatarColor(savedColor);
       setAvatarUrl(savedAvatar);
       setEditEmoji(savedEmoji);
+      setEditHint(savedHint ?? "");
     }
-  }, [open, savedName, savedColor, savedAvatar, savedEmoji]);
+  }, [open, savedName, savedColor, savedAvatar, savedEmoji, savedHint]);
 
   // Close on outside click
   useEffect(() => {
@@ -166,16 +173,29 @@ export default function AccountButton() {
       avatar_url:   photo,
       emoji:        emojiVal,
     });
-    if (error) { console.error("[Profile] upsert failed:", error); setSaving(false); return; }
+    if (error) {
+      console.error("[Profile] upsert failed:", error);
+      alert(`Save failed: ${error.message}`);
+      setSaving(false);
+      return;
+    }
     setSavedName(name);
     setSavedColor(color);
     setSavedAvatar(photo);
     setSavedEmoji(emojiVal);
     setDisplayName(name);
     setEmoji(emojiVal);
-    refreshProfile();
     setSaving(false);
     setOpen(false);
+  }
+
+  async function handleSaveHint() {
+    if (!user) return;
+    setSavingHint(true);
+    const hintVal = editHint.trim() || null;
+    await supabase.from("profiles").upsert({ id: user.id, password_hint: hintVal });
+    setSavedHint(hintVal);
+    setSavingHint(false);
   }
 
   async function handleReset() {
@@ -188,6 +208,11 @@ export default function AccountButton() {
     // Wipe sleep entries
     const { error: sleepErr } = await supabase.from("sleep_entries").delete().eq("user_id", user.id);
     if (sleepErr) { setResetError(`Sleep error: ${sleepErr.message}`); setResetting(false); return; }
+    // Wipe habit completions first (FK constraint), then habits
+    const { error: compErr } = await supabase.from("habit_completions").delete().eq("user_id", user.id);
+    if (compErr) { setResetError(`Completions error: ${compErr.message}`); setResetting(false); return; }
+    const { error: habErr } = await supabase.from("habits").delete().eq("user_id", user.id);
+    if (habErr) { setResetError(`Habits error: ${habErr.message}`); setResetting(false); return; }
     // Reset profile to defaults (avoid null for columns that may have NOT NULL constraints)
     const { error: profileErr } = await supabase.from("profiles").update({
       display_name: null,
@@ -258,6 +283,7 @@ export default function AccountButton() {
           width: 280,
           maxHeight: "calc(100vh - 5rem)",
           overflowY: "auto",
+          overflowX: "hidden",
         }}>
           {/* Avatar + email */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
@@ -335,13 +361,12 @@ export default function AccountButton() {
             <label style={{ display: "block", fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.375rem" }}>
               {t("profile.greetingEmoji")}
             </label>
-            {/* Type input + None button */}
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
               <input
                 type="text"
                 value={editEmoji ?? ""}
                 onChange={e => setEditEmoji(e.target.value || null)}
-                placeholder={t("profile.typeEmoji")}
+                placeholder=""
                 maxLength={8}
                 className="th-input"
                 style={{ width: 72, textAlign: "center", fontSize: "1.25rem", borderRadius: "0.5rem", padding: "0.3rem 0.5rem", boxSizing: "border-box" }}
@@ -360,7 +385,6 @@ export default function AccountButton() {
                 {t("profile.noEmoji")}
               </button>
             </div>
-            {/* Quick-pick grid */}
             <div style={{ display: "flex", flexWrap: "wrap", gap: "0.25rem" }}>
               {EMOJI_OPTIONS.map(e => (
                 <button
@@ -380,13 +404,64 @@ export default function AccountButton() {
             </div>
           </div>
 
+          {/* Password hint */}
+          <div style={{ marginBottom: "0.75rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem", marginBottom: "0.375rem" }}>
+              <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                Hint
+              </span>
+              <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }} className="hint-info-wrap">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--c-text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: "default", flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="8" strokeWidth="3" />
+                  <line x1="12" y1="12" x2="12" y2="16" />
+                </svg>
+                <div className="hint-tooltip" style={{
+                  position: "absolute", bottom: "calc(100% + 6px)", left: 0,
+                  backgroundColor: "var(--c-text1)", color: "var(--c-bg)",
+                  fontSize: "0.6875rem", lineHeight: 1.45, padding: "0.4rem 0.6rem",
+                  borderRadius: "0.5rem", whiteSpace: "normal", width: 170,
+                  pointerEvents: "none", zIndex: 100,
+                  opacity: 0, transition: "opacity 0.15s",
+                }}>
+                  {t("profile.passwordHintNote")}
+                </div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: "0.5rem", width: "100%", boxSizing: "border-box" }}>
+              <input
+                type="text"
+                value={editHint}
+                onChange={e => setEditHint(e.target.value)}
+                placeholder={t("auth.passwordHintPlaceholder")}
+                className="th-input"
+                style={{ flex: 1, minWidth: 0, fontSize: "0.8125rem", borderRadius: "0.5rem", padding: "0.5rem 0.625rem", boxSizing: "border-box" }}
+              />
+              <button
+                type="button"
+                onClick={handleSaveHint}
+                disabled={savingHint || editHint.trim() === (savedHint ?? "")}
+                className="th-btn"
+                style={{
+                  fontSize: "0.8125rem", padding: "0.4rem 0.625rem", borderRadius: "0.5rem",
+                  cursor: (savingHint || editHint.trim() === (savedHint ?? "")) ? "default" : "pointer",
+                  opacity: (savingHint || editHint.trim() === (savedHint ?? "")) ? 0.5 : 1,
+                  whiteSpace: "nowrap", flexShrink: 0,
+                }}
+              >
+                {savingHint ? t("profile.savingHint") : t("profile.saveHint")}
+              </button>
+            </div>
+          </div>
+
           {/* Save */}
           <button type="button" onClick={handleSave} disabled={saving} className="th-btn"
             style={{
-              width: "100%", padding: "0.5rem", borderRadius: "0.625rem",
+              width: "100%", padding: "0.4rem", borderRadius: "0.625rem",
               fontSize: "0.875rem", fontWeight: 600, cursor: saving ? "default" : "pointer",
               opacity: saving ? 0.6 : 1, marginBottom: "0.75rem",
-            }}>
+            }}
+          >
             {saving ? t("profile.saving") : t("profile.save")}
           </button>
 

@@ -2,9 +2,24 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 
-export type ThemeId = "default" | "midnight" | "forest" | "rose" | "mono";
+export type ThemeId = "default" | "midnight" | "forest" | "rose" | "mono" | "custom";
 
 const STORAGE_KEY = "today-theme";
+export const CUSTOM_STORAGE_KEY = "today-theme-custom";
+
+export interface CustomColors {
+  bg:     string;
+  card:   string;
+  accent: string;
+  text:   string;
+}
+
+export const DEFAULT_CUSTOM: CustomColors = {
+  bg:     "#F8F3EB",
+  card:   "#ffffff",
+  accent: "#D4673A",
+  text:   "#2C1F0F",
+};
 
 interface ThemeVars {
   "--c-bg": string;
@@ -30,7 +45,7 @@ interface ThemeVars {
   "--c-shadow-h": string;
 }
 
-const THEMES: Record<ThemeId, ThemeVars> = {
+const THEMES: Record<Exclude<ThemeId, "custom">, ThemeVars> = {
   default: {
     "--c-bg":          "#F8F3EB",
     "--c-card":        "#ffffff",
@@ -148,24 +163,108 @@ const THEMES: Record<ThemeId, ThemeVars> = {
   },
 };
 
-export function applyThemeVars(id: ThemeId) {
-  const vars = THEMES[id];
+// ── Color utilities ────────────────────────────────────────────────────────
+
+function hexToRgb(hex: string): [number, number, number] {
+  const h = hex.replace("#", "");
+  const full = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  const n = parseInt(full, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function rgbToHex(r: number, g: number, b: number): string {
+  return "#" + [r, g, b]
+    .map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0"))
+    .join("");
+}
+
+function blend(a: string, b: string, t: number): string {
+  const [ar, ag, ab] = hexToRgb(a);
+  const [br, bg, bb] = hexToRgb(b);
+  return rgbToHex(ar + (br - ar) * t, ag + (bg - ag) * t, ab + (bb - ab) * t);
+}
+
+function darken(hex: string, factor: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r * factor, g * factor, b * factor);
+}
+
+function lighten(hex: string, amount: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return rgbToHex(r + (255 - r) * amount, g + (255 - g) * amount, b + (255 - b) * amount);
+}
+
+function luminance(hex: string): number {
+  const [r, g, b] = hexToRgb(hex);
+  const toLinear = (c: number) => {
+    const s = c / 255;
+    return s <= 0.04045 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * toLinear(r) + 0.7152 * toLinear(g) + 0.0722 * toLinear(b);
+}
+
+function contrastFg(hex: string): string {
+  return luminance(hex) > 0.35 ? "#000000" : "#ffffff";
+}
+
+function rgbaStr(hex: string, alpha: number): string {
+  const [r, g, b] = hexToRgb(hex);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+export function deriveCustomTheme(c: CustomColors): ThemeVars {
+  const isDark  = luminance(c.bg) < 0.15;
+  const accent2 = isDark ? lighten(c.accent, 0.18) : darken(c.accent, 0.84);
+  const accentFg = contrastFg(c.accent);
+  const text2   = blend(c.text, c.bg, 0.42);
+  const text3   = blend(c.text, c.bg, 0.68);
+  const border  = blend(c.card, c.text, 0.12);
+  const divider = blend(c.card, c.text, 0.06);
+  const item    = blend(c.bg, c.card, 0.45);
+  const doneFg  = isDark ? lighten(c.accent, 0.20) : darken(c.accent, 0.82);
+  const [tr, tg, tb] = hexToRgb(c.text);
+  const so = isDark ? 0.40 : 0.06;
+  return {
+    "--c-bg":          c.bg,
+    "--c-card":        c.card,
+    "--c-text1":       c.text,
+    "--c-text2":       text2,
+    "--c-text3":       text3,
+    "--c-accent":      c.accent,
+    "--c-accent2":     accent2,
+    "--c-accent-fg":   accentFg,
+    "--c-border":      border,
+    "--c-divider":     divider,
+    "--c-skel":        divider,
+    "--c-item":        item,
+    "--c-done-bg":     rgbaStr(c.accent, 0.10),
+    "--c-done-fg":     doneFg,
+    "--c-check":       c.accent,
+    "--c-check-hover": accent2,
+    "--c-streak":      c.accent,
+    "--c-trash":       border,
+    "--c-ring":        rgbaStr(c.accent, 0.22),
+    "--c-shadow":      `0 1px 3px rgba(${tr},${tg},${tb},${so}), 0 4px 16px rgba(${tr},${tg},${tb},${so * 0.65})`,
+    "--c-shadow-h":    `0 2px 8px rgba(${tr},${tg},${tb},${so * 1.6}), 0 8px 24px rgba(${tr},${tg},${tb},${so * 1.2})`,
+  };
+}
+
+// ── Apply vars to DOM ──────────────────────────────────────────────────────
+
+function applyVars(vars: ThemeVars) {
   const root = document.documentElement;
   for (const [key, value] of Object.entries(vars)) {
     root.style.setProperty(key, value);
   }
-
-  // Inject scrollbar colors directly — CSS custom properties don't reliably
-  // resolve inside ::-webkit-scrollbar pseudo-elements in all browsers.
   let el = document.getElementById("theme-scrollbar") as HTMLStyleElement | null;
   if (!el) {
     el = document.createElement("style");
     el.id = "theme-scrollbar";
     document.head.appendChild(el);
   }
-  const thumb = vars["--c-text3"];
+  const thumb      = vars["--c-text3"];
   const thumbHover = vars["--c-text2"];
-  const track = vars["--c-skel"];
+  const track      = vars["--c-skel"];
   el.textContent = `
     html { scrollbar-color: ${thumb} ${track}; scrollbar-width: thin; }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -175,6 +274,25 @@ export function applyThemeVars(id: ThemeId) {
     ::-webkit-scrollbar-corner { background: ${track}; }
   `;
 }
+
+export function applyThemeVars(id: ThemeId, customColors?: CustomColors) {
+  if (id === "custom") {
+    let colors = customColors;
+    if (!colors) {
+      try {
+        const raw = localStorage.getItem(CUSTOM_STORAGE_KEY);
+        colors = raw ? (JSON.parse(raw) as CustomColors) : DEFAULT_CUSTOM;
+      } catch { colors = DEFAULT_CUSTOM; }
+    }
+    applyVars(deriveCustomTheme(colors));
+  } else {
+    applyVars(THEMES[id]);
+  }
+}
+
+// ── Context ────────────────────────────────────────────────────────────────
+
+const VALID_THEME_IDS = new Set<string>(["default", "midnight", "forest", "rose", "mono", "custom"]);
 
 interface ThemeContext {
   theme: ThemeId;
@@ -193,22 +311,20 @@ export function useTheme() {
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeId>("default");
 
-  // Read persisted theme on mount and apply
   useEffect(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null;
-      const id: ThemeId = saved && saved in THEMES ? saved : "default";
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const id: ThemeId = saved && VALID_THEME_IDS.has(saved) ? (saved as ThemeId) : "default";
       setThemeState(id);
       applyThemeVars(id);
     } catch {}
   }, []);
 
-  // Apply theme when settings-updated fires (e.g. synced from Supabase on login)
   useEffect(() => {
     const handler = () => {
       try {
-        const saved = localStorage.getItem(STORAGE_KEY) as ThemeId | null;
-        const id: ThemeId = saved && saved in THEMES ? saved : "default";
+        const saved = localStorage.getItem(STORAGE_KEY);
+        const id: ThemeId = saved && VALID_THEME_IDS.has(saved) ? (saved as ThemeId) : "default";
         setThemeState(id);
         applyThemeVars(id);
       } catch {}
@@ -220,9 +336,7 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
   function setTheme(id: ThemeId) {
     setThemeState(id);
     applyThemeVars(id);
-    try {
-      localStorage.setItem(STORAGE_KEY, id);
-    } catch {}
+    try { localStorage.setItem(STORAGE_KEY, id); } catch {}
   }
 
   return (
@@ -234,9 +348,9 @@ export default function ThemeProvider({ children }: { children: React.ReactNode 
 
 // Export theme metadata for the settings UI
 export const THEME_META = [
-  { id: "default" as ThemeId, label: "Default",  description: "Warm & calm",   swatches: ["#F8F3EB", "#ffffff", "#D4673A"] as [string,string,string] },
+  { id: "default"  as ThemeId, label: "Default",  description: "Warm & calm",   swatches: ["#F8F3EB", "#ffffff", "#D4673A"] as [string,string,string] },
   { id: "midnight" as ThemeId, label: "Midnight", description: "Deep navy",     swatches: ["#0D1424", "#152033", "#5B9BD4"] as [string,string,string] },
-  { id: "forest" as ThemeId,  label: "Forest",   description: "Earthy greens", swatches: ["#141F12", "#1C2C1A", "#72C464"] as [string,string,string] },
-  { id: "rose" as ThemeId,    label: "Rose",     description: "Soft & rosy",   swatches: ["#FDF0F3", "#ffffff", "#C45070"] as [string,string,string] },
-  { id: "mono" as ThemeId,    label: "Mono",     description: "Pure minimal",  swatches: ["#F2F2F2", "#ffffff", "#111111"] as [string,string,string] },
+  { id: "forest"   as ThemeId, label: "Forest",   description: "Earthy greens", swatches: ["#141F12", "#1C2C1A", "#72C464"] as [string,string,string] },
+  { id: "rose"     as ThemeId, label: "Rose",     description: "Soft & rosy",   swatches: ["#FDF0F3", "#ffffff", "#C45070"] as [string,string,string] },
+  { id: "mono"     as ThemeId, label: "Mono",     description: "Pure minimal",  swatches: ["#F2F2F2", "#ffffff", "#111111"] as [string,string,string] },
 ];

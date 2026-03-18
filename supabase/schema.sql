@@ -86,3 +86,38 @@ CREATE TABLE IF NOT EXISTS events (
 ALTER TABLE events ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "events_self" ON events
   USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ── Journal entries ───────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS journal_entries (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  date       DATE NOT NULL,
+  content    TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, date)
+);
+ALTER TABLE journal_entries ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "journal_self" ON journal_entries
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ── Countdowns ────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS countdowns (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id    UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  name       TEXT NOT NULL,
+  date       DATE NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+ALTER TABLE countdowns ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "countdowns_self" ON countdowns
+  USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- ── Profile: section order & visibility ──────────────────────────────────────
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS section_order      TEXT;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS section_visibility TEXT;
+
+-- ── Profile: password hint ────────────────────────────────────────────────────
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS password_hint TEXT;
+
+-- ── Profile: custom theme colors ──────────────────────────────────────────────
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS custom_colors TEXT;

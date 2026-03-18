@@ -321,6 +321,8 @@ export default function SleepTracker() {
         score: e.score as number,
       }));
       setEntries(stored);
+      try { saveEntries(stored); } catch {}
+      window.dispatchEvent(new CustomEvent("habits-updated"));
 
       const todayEntry = stored.find(e => e.date === todayStr());
       if (todayEntry) {

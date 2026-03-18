@@ -409,7 +409,12 @@ function MonthCalendar({ habits, moods, events, weekStart, locale, onSaveMood, o
             return (
               <button
                 key={dStr}
-                onClick={() => { if (!isFuture) setSelected(isSel ? null : date); }}
+                onClick={() => {
+                  if (!isFuture) {
+                    setSelected(isSel ? null : date);
+                    if (!isSel) window.dispatchEvent(new CustomEvent("journal-date-open", { detail: dStr }));
+                  }
+                }}
                 className="flex flex-col items-center rounded-xl py-1.5 px-0.5 transition-colors"
                 style={{
                   minHeight: 58,
@@ -794,18 +799,45 @@ export default function CalendarSection() {
   if (!mounted) return null;
 
   return (
-    <div className="flex flex-col gap-5">
-      <MonthCalendar
-        habits={habits}
-        moods={moods}
-        events={events}
-        weekStart={weekStart}
-        locale={locale}
-        onSaveMood={saveMood}
-        onAddEvent={addEvent}
-        onDeleteEvent={deleteEvent}
-      />
-      <HabitHeatmap habits={habits} weekStart={weekStart} locale={locale} />
-    </div>
+    <MonthCalendar
+      habits={habits}
+      moods={moods}
+      events={events}
+      weekStart={weekStart}
+      locale={locale}
+      onSaveMood={saveMood}
+      onAddEvent={addEvent}
+      onDeleteEvent={deleteEvent}
+    />
   );
+}
+
+/* ── HabitActivitySection — standalone export ──────────────────────────────── */
+
+export function HabitActivitySection() {
+  const [habits,    setHabits]    = useState<Habit[]>([]);
+  const [weekStart, setWeekStart] = useState<0 | 1>(0);
+  const [locale,    setLocale]    = useState("en-US");
+  const [mounted,   setMounted]   = useState(false);
+
+  useEffect(() => {
+    setHabits(loadJSON(HABITS_KEY, []));
+    setWeekStart(loadWeekStart());
+    setLocale(loadLocale());
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    const onHabits   = () => setHabits(loadJSON(HABITS_KEY, []));
+    const onSettings = () => { setWeekStart(loadWeekStart()); setLocale(loadLocale()); };
+    window.addEventListener("habits-updated",   onHabits);
+    window.addEventListener("settings-updated", onSettings);
+    return () => {
+      window.removeEventListener("habits-updated",   onHabits);
+      window.removeEventListener("settings-updated", onSettings);
+    };
+  }, []);
+
+  if (!mounted) return null;
+  return <HabitHeatmap habits={habits} weekStart={weekStart} locale={locale} />;
 }
