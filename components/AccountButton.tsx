@@ -117,7 +117,7 @@ export default function AccountButton() {
       setAvatarUrl(savedAvatar);
       setEditEmoji(savedEmoji);
     }
-  }, [open, savedName, savedColor, savedAvatar]);
+  }, [open, savedName, savedColor, savedAvatar, savedEmoji]);
 
   // Close on outside click
   useEffect(() => {
@@ -218,6 +218,8 @@ export default function AccountButton() {
           boxShadow: "0 4px 24px rgba(0,0,0,0.14), 0 1px 4px rgba(0,0,0,0.08)",
           padding: "1.25rem",
           width: 280,
+          maxHeight: "calc(100vh - 5rem)",
+          overflowY: "auto",
         }}>
           {/* Avatar + email */}
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "0.5rem", marginBottom: "1.25rem" }}>
