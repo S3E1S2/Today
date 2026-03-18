@@ -244,7 +244,8 @@ export default function AuthPage() {
 
           <button
             type="button"
-            onClick={() => {
+            onClick={async () => {
+              await supabase.auth.signOut();
               try {
                 localStorage.setItem("today-language", "en-US");
                 localStorage.setItem("today-theme", "default");

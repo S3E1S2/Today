@@ -337,7 +337,7 @@ export default function SleepTracker() {
   const previewHours = calcHours(bedtime, wakeup);
   const previewScore = calcScore(previewHours, quality, goal);
 
-  function handleLog() {
+  async function handleLog() {
     const hours = calcHours(bedtime, wakeup);
     const score = calcScore(hours, quality, goal);
     const entry: SleepEntry = { date: todayStr(), bedtime, wakeup, hours, quality, score };
@@ -349,8 +349,13 @@ export default function SleepTracker() {
     setSaved(true);
 
     if (user) {
-      supabase.from("sleep_entries")
+      const { error } = await supabase.from("sleep_entries")
         .upsert({ user_id: user.id, ...entry }, { onConflict: "user_id,date" });
+      if (error) {
+        console.error("[Sleep] save failed:", error);
+        // Fall back to localStorage so the entry isn't lost
+        saveEntries(updated);
+      }
     } else {
       saveEntries(updated);
     }
