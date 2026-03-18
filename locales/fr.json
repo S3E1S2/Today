@@ -2,7 +2,6 @@
   "greeting.morning": "Bonjour",
   "greeting.afternoon": "Bonne après-midi",
   "greeting.evening": "Bonsoir",
-
   "settings.title": "Paramètres",
   "settings.subtitle": "Apparence et préférences",
   "settings.openLabel": "Ouvrir les paramètres",
@@ -13,7 +12,6 @@
   "settings.weekStartsOn": "La semaine commence le",
   "settings.sunday": "Dim",
   "settings.monday": "Lun",
-
   "theme.default.label": "Défaut",
   "theme.default.desc": "Chaud et calme",
   "theme.midnight.label": "Minuit",
@@ -24,7 +22,6 @@
   "theme.rose.desc": "Doux et rosé",
   "theme.mono.label": "Mono",
   "theme.mono.desc": "Minimalisme pur",
-
   "news.title": "Actualités",
   "news.cat.all": "Tout",
   "news.cat.world": "Monde",
@@ -59,7 +56,6 @@
   "news.tryAgain": "Réessayer",
   "news.unreachable": "{count} source inaccessible : {sources}",
   "news.unreachableN": "{count} sources inaccessibles : {sources}",
-
   "habits.title": "Habitudes quotidiennes",
   "habits.count": "{done} / {total} aujourd'hui",
   "habits.empty": "Ajoutez votre première habitude ci-dessous ↓",
@@ -68,7 +64,6 @@
   "habits.markComplete": "Marquer comme terminé",
   "habits.markIncomplete": "Marquer comme non terminé",
   "habits.delete": "Supprimer l'habitude",
-
   "cal.title": "Calendrier",
   "cal.today": "Aujourd'hui",
   "cal.activityTitle": "Activité des habitudes",
@@ -86,7 +81,6 @@
   "cal.eventLegend": "Événement",
   "cal.habitsOf": "{done} habitude(s) sur {total} complétée(s)",
   "cal.addHabitsHint": "Ajoutez des habitudes pour voir votre carte d'activité.",
-
   "sleep.title": "Suivi du sommeil",
   "sleep.goalBtn": "Objectif : {goal}h",
   "sleep.goalLabel": "Objectif de sommeil (heures)",
@@ -108,15 +102,12 @@
   "sleep.hSlept": "{hours}h dormis",
   "sleep.qualityRating": "qualité {rating}/5",
   "sleep.preview": "{hours}h · score {score} ({label})",
-
   "history.title": "Ce jour dans l'histoire",
   "history.error": "Impossible de charger les événements historiques.",
-
   "fact.title": "Le saviez-vous ?",
   "fact.another": "Autre",
   "fact.error": "Impossible de charger un fait pour le moment.",
   "fact.via": "via",
-
   "auth.subtitle": "Votre tableau de bord matinal personnel",
   "auth.signin": "Se connecter",
   "auth.signup": "S'inscrire",
@@ -125,5 +116,29 @@
   "auth.createAccount": "Créer un compte",
   "auth.signingIn": "Connexion…",
   "auth.creating": "Création…",
-  "auth.guest": "Continuer en tant qu'invité →"
+  "auth.guest": "Continuer en tant qu'invité →",
+  "profile.displayName": "Nom d'affichage",
+  "profile.namePlaceholder": "Votre nom",
+  "profile.avatarColor": "Couleur de l'avatar",
+  "profile.photo": "Photo de profil",
+  "profile.changePhoto": "Changer la photo",
+  "profile.uploadPhoto": "Télécharger une photo",
+  "profile.removePhoto": "Supprimer",
+  "profile.greetingEmoji": "Emoji de salutation",
+  "profile.typeEmoji": "Taper un emoji",
+  "profile.noEmoji": "Sans emoji",
+  "profile.save": "Enregistrer",
+  "profile.saving": "Enregistrement…",
+  "profile.signOut": "Se déconnecter",
+  "profile.reset": "Réinitialiser le profil",
+  "profile.resetSure1": "Êtes-vous sûr ?",
+  "profile.resetSure2": "Vraiment sûr ?",
+  "profile.resetSure3": "Sûr à 100% ?",
+  "profile.resetYes": "Oui, réinitialiser",
+  "profile.resetCancel": "Annuler",
+  "profile.resetPasswordPrompt": "Entrez votre mot de passe pour confirmer",
+  "profile.passwordPlaceholder": "Mot de passe",
+  "profile.resetWrongPassword": "Mot de passe incorrect.",
+  "profile.resetConfirm": "Tout réinitialiser",
+  "profile.resetting": "Réinitialisation…"
 }

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "./AuthProvider";
+import { useLanguage } from "./LanguageProvider";
 import { supabase } from "@/lib/supabase";
 
 const AVATAR_COLORS = [
@@ -71,6 +72,7 @@ function AvatarCircle({ avatarUrl, initials, color, size = 36 }: {
 
 export default function AccountButton() {
   const { user, setDisplayName, setEmoji, refreshProfile } = useAuth();
+  const { t }    = useLanguage();
   const router   = useRouter();
   const wrapRef  = useRef<HTMLDivElement>(null);
   const fileRef  = useRef<HTMLInputElement>(null);
@@ -182,14 +184,14 @@ export default function AccountButton() {
     setResetError(null);
     // Verify password first
     const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: resetPassword });
-    if (authErr) { setResetError("Incorrect password."); setResetting(false); return; }
+    if (authErr) { setResetError(t("profile.resetWrongPassword")); setResetting(false); return; }
     // Wipe all Supabase data
     const { error: sleepErr } = await supabase.from("sleep_entries").delete().eq("user_id", user.id);
     if (sleepErr) console.error("[Reset] sleep_entries delete failed:", sleepErr);
-    const { error: profileErr } = await supabase.from("profiles").upsert({
-      id: user.id, display_name: null, avatar_color: null, avatar_url: null,
+    const { error: profileErr } = await supabase.from("profiles").update({
+      display_name: null, avatar_color: null, avatar_url: null,
       emoji: null, theme: "default", language: "en-US",
-    });
+    }).eq("id", user.id);
     if (profileErr) console.error("[Reset] profile upsert failed:", profileErr);
     // Wipe app localStorage keys (not Supabase auth tokens)
     try {
@@ -268,13 +270,13 @@ export default function AccountButton() {
           {/* Display name */}
           <div style={{ marginBottom: "0.875rem" }}>
             <label style={{ display: "block", fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.375rem" }}>
-              Display name
+              {t("profile.displayName")}
             </label>
             <input
               type="text"
               value={displayName}
               onChange={e => setEditName(e.target.value)}
-              placeholder="Your name"
+              placeholder={t("profile.namePlaceholder")}
               className="th-input"
               style={{ width: "100%", fontSize: "0.875rem", borderRadius: "0.5rem", padding: "0.5rem 0.625rem", boxSizing: "border-box" }}
             />
@@ -283,7 +285,7 @@ export default function AccountButton() {
           {/* Avatar color */}
           <div style={{ marginBottom: "0.875rem" }}>
             <label style={{ display: "block", fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.5rem" }}>
-              Avatar color
+              {t("profile.avatarColor")}
             </label>
             <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
               {AVATAR_COLORS.map(c => (
@@ -306,17 +308,17 @@ export default function AccountButton() {
           {/* Profile photo */}
           <div style={{ marginBottom: "1.125rem" }}>
             <label style={{ display: "block", fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.375rem" }}>
-              Profile photo
+              {t("profile.photo")}
             </label>
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
               <button type="button" onClick={() => fileRef.current?.click()} className="th-btn"
                 style={{ fontSize: "0.8125rem", padding: "0.4rem 0.75rem", borderRadius: "0.5rem", cursor: "pointer" }}>
-                {avatarUrl ? "Change photo" : "Upload photo"}
+                {avatarUrl ? t("profile.changePhoto") : t("profile.uploadPhoto")}
               </button>
               {avatarUrl && (
                 <button type="button" onClick={() => setAvatarUrl(null)}
                   style={{ fontSize: "0.8125rem", cursor: "pointer", color: "var(--c-text3)", background: "none", border: "none", padding: "0.4rem 0" }}>
-                  Remove
+                  {t("profile.removePhoto")}
                 </button>
               )}
             </div>
@@ -326,7 +328,7 @@ export default function AccountButton() {
           {/* Greeting emoji */}
           <div style={{ marginBottom: "0.875rem" }}>
             <label style={{ display: "block", fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: "0.375rem" }}>
-              Greeting emoji
+              {t("profile.greetingEmoji")}
             </label>
             {/* Type input + None button */}
             <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.5rem" }}>
@@ -334,7 +336,7 @@ export default function AccountButton() {
                 type="text"
                 value={editEmoji ?? ""}
                 onChange={e => setEditEmoji(e.target.value || null)}
-                placeholder="Type emoji"
+                placeholder={t("profile.typeEmoji")}
                 maxLength={8}
                 className="th-input"
                 style={{ width: 72, textAlign: "center", fontSize: "1.25rem", borderRadius: "0.5rem", padding: "0.3rem 0.5rem", boxSizing: "border-box" }}
@@ -350,7 +352,7 @@ export default function AccountButton() {
                   fontWeight: editEmoji === null ? 600 : 400,
                 }}
               >
-                No emoji
+                {t("profile.noEmoji")}
               </button>
             </div>
             {/* Quick-pick grid */}
@@ -380,7 +382,7 @@ export default function AccountButton() {
               fontSize: "0.875rem", fontWeight: 600, cursor: saving ? "default" : "pointer",
               opacity: saving ? 0.6 : 1, marginBottom: "0.75rem",
             }}>
-            {saving ? "Saving…" : "Save changes"}
+            {saving ? t("profile.saving") : t("profile.save")}
           </button>
 
           <div style={{ height: 1, backgroundColor: "var(--c-divider)", margin: "0 0 0.5rem" }} />
@@ -397,13 +399,13 @@ export default function AccountButton() {
               onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--c-item)"; e.currentTarget.style.color = "#c45050"; }}
               onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--c-text3)"; }}
             >
-              Reset profile
+              {t("profile.reset")}
             </button>
           )}
           {resetStep >= 1 && resetStep <= 3 && (
             <div style={{ marginBottom: "0.25rem" }}>
               <p style={{ fontSize: "0.8125rem", color: "#c45050", marginBottom: "0.5rem", fontWeight: 500 }}>
-                {resetStep === 1 ? "Are you sure?" : resetStep === 2 ? "Are you sure, sure?" : "Are you 100% sure?"}
+                {resetStep === 1 ? t("profile.resetSure1") : resetStep === 2 ? t("profile.resetSure2") : t("profile.resetSure3")}
               </p>
               <div style={{ display: "flex", gap: "0.5rem" }}>
                 <button type="button" onClick={() => setResetStep(s => s + 1)}
@@ -411,14 +413,14 @@ export default function AccountButton() {
                     flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
                     fontWeight: 600, cursor: "pointer", border: "none", backgroundColor: "#c45050", color: "#fff",
                   }}>
-                  Yes, reset
+                  {t("profile.resetYes")}
                 </button>
                 <button type="button" onClick={() => setResetStep(0)}
                   style={{
                     flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
                     cursor: "pointer", border: "1px solid var(--c-border)", backgroundColor: "transparent", color: "var(--c-text2)",
                   }}>
-                  Cancel
+                  {t("profile.resetCancel")}
                 </button>
               </div>
             </div>
@@ -426,13 +428,13 @@ export default function AccountButton() {
           {resetStep === 4 && (
             <div style={{ marginBottom: "0.25rem" }}>
               <p style={{ fontSize: "0.8125rem", color: "#c45050", marginBottom: "0.5rem", fontWeight: 500 }}>
-                Enter your password to confirm
+                {t("profile.resetPasswordPrompt")}
               </p>
               <input
                 type="password"
                 value={resetPassword}
                 onChange={e => { setResetPassword(e.target.value); setResetError(null); }}
-                placeholder="Password"
+                placeholder={t("profile.passwordPlaceholder")}
                 className="th-input"
                 style={{ width: "100%", fontSize: "0.875rem", borderRadius: "0.5rem", padding: "0.5rem 0.625rem", boxSizing: "border-box", marginBottom: "0.5rem" }}
                 onKeyDown={e => e.key === "Enter" && handleReset()}
@@ -449,14 +451,14 @@ export default function AccountButton() {
                     border: "none", backgroundColor: "#c45050", color: "#fff",
                     opacity: resetting || !resetPassword ? 0.6 : 1,
                   }}>
-                  {resetting ? "Resetting…" : "Reset everything"}
+                  {resetting ? t("profile.resetting") : t("profile.resetConfirm")}
                 </button>
                 <button type="button" onClick={() => { setResetStep(0); setResetPassword(""); setResetError(null); }}
                   style={{
                     flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
                     cursor: "pointer", border: "1px solid var(--c-border)", backgroundColor: "transparent", color: "var(--c-text2)",
                   }}>
-                  Cancel
+                  {t("profile.resetCancel")}
                 </button>
               </div>
             </div>
@@ -476,7 +478,7 @@ export default function AccountButton() {
             onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--c-item)")}
             onMouseLeave={e => (e.currentTarget.style.backgroundColor = "transparent")}
           >
-            Sign out
+            {t("profile.signOut")}
           </button>
         </div>
       )}

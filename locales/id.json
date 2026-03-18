@@ -2,7 +2,6 @@
   "greeting.morning": "Selamat pagi",
   "greeting.afternoon": "Selamat siang",
   "greeting.evening": "Selamat malam",
-
   "settings.title": "Pengaturan",
   "settings.subtitle": "Tampilan & preferensi",
   "settings.openLabel": "Buka pengaturan",
@@ -13,7 +12,6 @@
   "settings.weekStartsOn": "Minggu dimulai pada",
   "settings.sunday": "Min",
   "settings.monday": "Sen",
-
   "theme.default.label": "Default",
   "theme.default.desc": "Hangat & tenang",
   "theme.midnight.label": "Tengah Malam",
@@ -24,7 +22,6 @@
   "theme.rose.desc": "Lembut & merah muda",
   "theme.mono.label": "Mono",
   "theme.mono.desc": "Minimalis murni",
-
   "news.title": "Berita Utama",
   "news.cat.all": "Semua",
   "news.cat.world": "Dunia",
@@ -59,7 +56,6 @@
   "news.tryAgain": "Coba lagi",
   "news.unreachable": "{count} sumber tidak tersedia: {sources}",
   "news.unreachableN": "{count} sumber tidak tersedia: {sources}",
-
   "habits.title": "Kebiasaan Harian",
   "habits.count": "{done} / {total} hari ini",
   "habits.empty": "Tambahkan kebiasaan pertamamu di bawah ↓",
@@ -68,7 +64,6 @@
   "habits.markComplete": "Tandai selesai",
   "habits.markIncomplete": "Tandai belum selesai",
   "habits.delete": "Hapus kebiasaan",
-
   "cal.title": "Kalender",
   "cal.today": "Hari ini",
   "cal.activityTitle": "Aktivitas Kebiasaan",
@@ -86,7 +81,6 @@
   "cal.eventLegend": "Acara",
   "cal.habitsOf": "{done} dari {total} kebiasaan selesai",
   "cal.addHabitsHint": "Tambahkan kebiasaan untuk melihat peta aktivitas.",
-
   "sleep.title": "Pelacak Tidur",
   "sleep.goalBtn": "Target: {goal}j",
   "sleep.goalLabel": "Target tidur (jam)",
@@ -108,15 +102,12 @@
   "sleep.hSlept": "{hours}j tidur",
   "sleep.qualityRating": "kualitas {rating}/5",
   "sleep.preview": "{hours}j · skor {score} ({label})",
-
   "history.title": "Hari Ini dalam Sejarah",
   "history.error": "Tidak dapat memuat peristiwa sejarah.",
-
   "fact.title": "Tahukah Kamu?",
   "fact.another": "Lainnya",
   "fact.error": "Tidak dapat memuat fakta saat ini.",
   "fact.via": "via",
-
   "auth.subtitle": "Dashboard pagi pribadi Anda",
   "auth.signin": "Masuk",
   "auth.signup": "Daftar",
@@ -125,5 +116,29 @@
   "auth.createAccount": "Buat akun",
   "auth.signingIn": "Sedang masuk…",
   "auth.creating": "Sedang membuat…",
-  "auth.guest": "Lanjutkan sebagai tamu →"
+  "auth.guest": "Lanjutkan sebagai tamu →",
+  "profile.displayName": "Nama tampilan",
+  "profile.namePlaceholder": "Nama kamu",
+  "profile.avatarColor": "Warna avatar",
+  "profile.photo": "Foto profil",
+  "profile.changePhoto": "Ganti foto",
+  "profile.uploadPhoto": "Unggah foto",
+  "profile.removePhoto": "Hapus",
+  "profile.greetingEmoji": "Emoji salam",
+  "profile.typeEmoji": "Ketik emoji",
+  "profile.noEmoji": "Tanpa emoji",
+  "profile.save": "Simpan perubahan",
+  "profile.saving": "Menyimpan…",
+  "profile.signOut": "Keluar",
+  "profile.reset": "Setel ulang profil",
+  "profile.resetSure1": "Apakah kamu yakin?",
+  "profile.resetSure2": "Yakin, yakin?",
+  "profile.resetSure3": "100% yakin?",
+  "profile.resetYes": "Ya, setel ulang",
+  "profile.resetCancel": "Batal",
+  "profile.resetPasswordPrompt": "Masukkan kata sandi untuk konfirmasi",
+  "profile.passwordPlaceholder": "Kata sandi",
+  "profile.resetWrongPassword": "Kata sandi salah.",
+  "profile.resetConfirm": "Setel ulang semua",
+  "profile.resetting": "Menyetel ulang…"
 }
