@@ -38,12 +38,13 @@ async function translateText(text: string, langpair: string): Promise<string> {
 export default function DashboardHeader() {
   const { locale, t } = useLanguage();
   const { displayName, emoji } = useAuth();
-  const [now, setNow]         = useState(new Date());
+  const [now, setNow]         = useState<Date | null>(null);
   const [quote, setQuote]     = useState<Quote | null>(null);
   const [weatherCode, setWeatherCode] = useState<number | null>(null);
   const [temp, setTemp]       = useState<number | null>(null);
 
   useEffect(() => {
+    setNow(new Date());
     const id = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(id);
   }, []);
@@ -97,16 +98,16 @@ export default function DashboardHeader() {
     );
   }, []);
 
-  const h        = now.getHours();
+  const h        = now ? now.getHours() : 6;
   const greeting = h < 12 ? t("greeting.morning") : h < 17 ? t("greeting.afternoon") : t("greeting.evening");
 
-  const timeStr = now.toLocaleTimeString("en-US", {
+  const timeStr = now ? now.toLocaleTimeString("en-US", {
     hour: "numeric", minute: "2-digit", hour12: true,
-  });
+  }) : null;
 
-  const dateStr = now.toLocaleDateString(locale, {
+  const dateStr = now ? now.toLocaleDateString(locale, {
     weekday: "long", month: "long", day: "numeric", year: "numeric",
-  });
+  }) : null;
 
   const conditionKey = weatherCode !== null ? (WMO_KEY[weatherCode] ?? "weather.unknown") : null;
 
@@ -118,9 +119,9 @@ export default function DashboardHeader() {
 
       {/* Date · Time · Weather */}
       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
-        <p className="text-base" style={{ color: "var(--c-text3)" }}>{dateStr}</p>
-        <span style={{ color: "var(--c-border)" }}>·</span>
-        <p className="text-base tabular-nums font-medium" style={{ color: "var(--c-text2)" }}>{timeStr}</p>
+        {dateStr && <p className="text-base" style={{ color: "var(--c-text3)" }}>{dateStr}</p>}
+        {dateStr && timeStr && <span style={{ color: "var(--c-border)" }}>·</span>}
+        {timeStr && <p className="text-base tabular-nums font-medium" style={{ color: "var(--c-text2)" }}>{timeStr}</p>}
         {temp !== null && conditionKey && (
           <>
             <span style={{ color: "var(--c-border)" }}>·</span>
