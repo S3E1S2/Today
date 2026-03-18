@@ -26,8 +26,8 @@ interface FeedConfig {
 
 const FEEDS_EN: FeedConfig[] = [
   { name: "BBC News",          url: "https://feeds.bbci.co.uk/news/rss.xml",                        category: "world"  },
-  { name: "CNN",               url: "https://rss.cnn.com/rss/cnn_topstories.rss",                   category: "world"  },
-  { name: "Reuters",           url: "https://feeds.reuters.com/reuters/worldNews",                   category: "world"  },
+  { name: "NPR News",          url: "https://feeds.npr.org/1001/rss.xml",                           category: "world"  },
+  { name: "ABC News",          url: "https://abcnews.go.com/abcnews/topstories",                     category: "world"  },
   { name: "The Guardian",      url: "https://www.theguardian.com/world/rss",                         category: "world"  },
   { name: "Al Jazeera",        url: "https://www.aljazeera.com/xml/rss/all.xml",                     category: "world"  },
   { name: "The New York Times",url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml",     category: "world"  },
@@ -196,7 +196,8 @@ const ENTERTAINMENT_SIGNALS = ["oscar", "award", "film", "movie", "actor", "actr
 const SOURCE_DOT: Record<string, string> = {
   // English
   "BBC News":           "#b5121b",
-  "CNN":                "#cc0000",
+  "NPR News":           "#3a86c8",
+  "ABC News":           "#00467f",
   "Reuters":            "#f06000",
   "The Guardian":       "#005689",
   "Al Jazeera":         "#7ab648",
