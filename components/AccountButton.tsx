@@ -185,14 +185,19 @@ export default function AccountButton() {
     // Verify password first
     const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: resetPassword });
     if (authErr) { setResetError(t("profile.resetWrongPassword")); setResetting(false); return; }
-    // Wipe all Supabase data
+    // Wipe sleep entries
     const { error: sleepErr } = await supabase.from("sleep_entries").delete().eq("user_id", user.id);
-    if (sleepErr) console.error("[Reset] sleep_entries delete failed:", sleepErr);
+    if (sleepErr) { setResetError(`Sleep error: ${sleepErr.message}`); setResetting(false); return; }
+    // Reset profile to defaults (avoid null for columns that may have NOT NULL constraints)
     const { error: profileErr } = await supabase.from("profiles").update({
-      display_name: null, avatar_color: null, avatar_url: null,
-      emoji: null, theme: "default", language: "en-US",
+      display_name: null,
+      avatar_color: AVATAR_COLORS[0],
+      avatar_url: null,
+      emoji: null,
+      theme: "default",
+      language: "en-US",
     }).eq("id", user.id);
-    if (profileErr) console.error("[Reset] profile upsert failed:", profileErr);
+    if (profileErr) { setResetError(`Profile error: ${profileErr.message}`); setResetting(false); return; }
     // Wipe app localStorage keys (not Supabase auth tokens)
     try {
       Object.keys(localStorage)
