@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { useLanguage } from "@/components/LanguageProvider";
+import { applyThemeVars } from "@/components/ThemeProvider";
 
 const LANGUAGES = [
   { code: "en-US", label: "EN" },
@@ -34,6 +35,8 @@ export default function AuthPage() {
 
   useEffect(() => {
     try { setLanguage(localStorage.getItem("today-language") || "en-US"); } catch {}
+    try { localStorage.setItem("today-theme", "default"); } catch {}
+    applyThemeVars("default");
   }, []);
 
   function cycleLanguage() {
@@ -126,8 +129,8 @@ export default function AuthPage() {
               display: "flex", alignItems: "center", gap: "0.375rem",
               padding: "0.375rem 0.75rem", borderRadius: "9999px",
               fontSize: "0.75rem", fontWeight: 500, cursor: "pointer",
-              backgroundColor: "var(--c-card)", color: "var(--c-text3)",
-              border: "1px solid var(--c-border)", boxShadow: "var(--c-shadow)",
+              backgroundColor: "var(--c-card, #fff)", color: "var(--c-text3, #888)",
+              border: "1px solid var(--c-border, #e5e7eb)", boxShadow: "var(--c-shadow, 0 1px 4px rgba(0,0,0,0.08))",
             }}
             onMouseEnter={e => (e.currentTarget.style.color = "var(--c-accent)")}
             onMouseLeave={e => (e.currentTarget.style.color = "var(--c-text3)")}
