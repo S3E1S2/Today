@@ -169,7 +169,7 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   "Health":         ["health", "disease", "vaccine", "hospital", "medical", "virus", "cancer", "treatment", "pandemic", "fda", "WHO", "outbreak"],
   "Science":        ["space", "discovery", "nasa", "biology", "physics", "asteroid", "planet", "gene", "quantum", "scientists found", "new species"],
   "Environment":    ["climate change", "carbon emissions", "pollution", "renewable energy", "wildfire", "deforestation", "global warming", "sea level"],
-  "War & Conflict": ["war", "battle", "troops", "military strike", "missile", "bombing", "ceasefire", "invasion", "airstrike", "hostage", "armed forces"],
+  "War & Conflict": ["war", "troops", "military strike", "missile", "bombing", "ceasefire", "invasion", "airstrike", "hostage", "armed forces", "combat", "warzone", "war zone", "war crimes", "rebel forces", "insurgent", "siege"],
   "Business":       ["stock market", "economy", "gdp", "inflation", "trade war", "earnings", "merger", "acquisition", "central bank", "interest rate", "recession"],
   "Sports":         ["sport", "tournament", "championship", "league", "nfl", "nba", "fifa", "olympic", "world cup", "grand prix", "transfer", "match result"],
   "Technology":     ["artificial intelligence", "software", "apple", "google", "meta", "startup", "cybersecurity", "robot", "semiconductor", "tech giant", "elon musk"],
@@ -361,7 +361,9 @@ export default function NewsSection() {
     if (activeTopic !== null) {
       result = result.filter(a => {
         const text = `${a.title} ${a.description}`.toLowerCase();
-        return TOPIC_KEYWORDS[activeTopic!]?.some(kw => text.includes(kw)) ?? false;
+        return TOPIC_KEYWORDS[activeTopic!]?.some(kw =>
+          kw.includes(" ") ? text.includes(kw) : new RegExp(`\\b${kw}\\b`).test(text)
+        ) ?? false;
       });
     }
     return result.slice(0, 10);
