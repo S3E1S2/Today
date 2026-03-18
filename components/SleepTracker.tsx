@@ -150,7 +150,11 @@ function WeeklyChart({ entries, goal, t, chartType }: {
       callbacks: {
         label: (item: TooltipItem<"bar" | "line">) => {
           const h = item.raw as number | null;
-          return h && h > 0 ? t("sleep.hSlept", { hours: h }) : "–";
+          if (!h || h === 0) return "–";
+          const entry = entryMap.get(days[item.dataIndex].date);
+          const lines: string[] = [t("sleep.hSlept", { hours: h })];
+          if (entry) lines.push(`${t(scoreLabelKey(entry.score))} · ${entry.score}/100`);
+          return lines;
         },
       },
       backgroundColor: "rgba(0,0,0,0.75)",
