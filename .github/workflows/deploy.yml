@@ -15,7 +15,12 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
-            cd /var/www/today
+            APP_DIR=$(pm2 describe today --no-color 2>/dev/null | grep "exec path" | awk '{print $NF}' | xargs dirname || echo "")
+            if [ -z "$APP_DIR" ]; then
+              APP_DIR=$(find /var /home /root -name "package.json" -path "*/today/*" -not -path "*/node_modules/*" 2>/dev/null | head -1 | xargs dirname || echo "/var/www/today")
+            fi
+            echo "App directory: $APP_DIR"
+            cd "$APP_DIR"
             git pull origin main
             npm install --production=false
             npm run build
