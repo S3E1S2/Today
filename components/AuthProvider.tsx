@@ -46,7 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .single()
 
     // If the query failed (likely a missing column causing 400), fall back to minimal select
-    let data = fullError ? null : fullData
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let data: any = fullError ? null : fullData
     if (fullError && fullError.code !== 'PGRST116') {
       const { data: fallback } = await supabase
         .from('profiles')
