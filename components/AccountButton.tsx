@@ -91,6 +91,12 @@ export default function AccountButton() {
   const [editEmoji,  setEditEmoji]  = useState<string | null>(null);
   const [savedEmoji, setSavedEmoji] = useState<string | null>(null);
 
+  // Reset flow
+  const [resetStep,     setResetStep]     = useState(0); // 0=idle 1-3=confirmations 4=password
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetError,    setResetError]    = useState<string | null>(null);
+  const [resetting,     setResetting]     = useState(false);
+
   // Load profile from Supabase when user logs in
   useEffect(() => {
     if (!user) return;
@@ -170,6 +176,22 @@ export default function AccountButton() {
     setOpen(false);
   }
 
+  async function handleReset() {
+    if (!user) return;
+    setResetting(true);
+    setResetError(null);
+    // Verify password first
+    const { error: authErr } = await supabase.auth.signInWithPassword({ email: user.email!, password: resetPassword });
+    if (authErr) { setResetError("Incorrect password."); setResetting(false); return; }
+    // Wipe profile
+    await supabase.from("profiles").upsert({
+      id: user.id, display_name: null, avatar_color: null, avatar_url: null, emoji: null,
+    });
+    setSavedName(null); setSavedColor(AVATAR_COLORS[0]); setSavedAvatar(null); setSavedEmoji(null);
+    setDisplayName(null); setEmoji(null);
+    setResetting(false); setResetStep(0); setResetPassword(""); setOpen(false);
+  }
+
   if (!user) {
     return (
       <button
@@ -196,7 +218,7 @@ export default function AccountButton() {
     <div ref={wrapRef} style={{ position: "fixed", top: "1rem", right: "3.75rem", zIndex: 40 }}>
       {/* Avatar button */}
       <button
-        onClick={() => setOpen(v => !v)}
+        onClick={() => { setOpen(v => !v); setResetStep(0); setResetPassword(""); setResetError(null); }}
         title={savedName ?? user.email ?? "Account"}
         style={{
           width: "2.25rem", height: "2.25rem", borderRadius: "9999px",
@@ -353,6 +375,85 @@ export default function AccountButton() {
           </button>
 
           <div style={{ height: 1, backgroundColor: "var(--c-divider)", margin: "0 0 0.5rem" }} />
+
+          {/* Reset profile */}
+          {resetStep === 0 && (
+            <button type="button"
+              onClick={() => setResetStep(1)}
+              style={{
+                width: "100%", textAlign: "left", padding: "0.5rem 0.25rem",
+                borderRadius: "0.5rem", fontSize: "0.875rem", cursor: "pointer",
+                color: "var(--c-text3)", backgroundColor: "transparent", border: "none",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--c-item)"; e.currentTarget.style.color = "#c45050"; }}
+              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--c-text3)"; }}
+            >
+              Reset profile
+            </button>
+          )}
+          {resetStep >= 1 && resetStep <= 3 && (
+            <div style={{ marginBottom: "0.25rem" }}>
+              <p style={{ fontSize: "0.8125rem", color: "#c45050", marginBottom: "0.5rem", fontWeight: 500 }}>
+                {resetStep === 1 ? "Are you sure?" : resetStep === 2 ? "Are you sure, sure?" : "Are you 100% sure?"}
+              </p>
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button type="button" onClick={() => setResetStep(s => s + 1)}
+                  style={{
+                    flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
+                    fontWeight: 600, cursor: "pointer", border: "none", backgroundColor: "#c45050", color: "#fff",
+                  }}>
+                  Yes, reset
+                </button>
+                <button type="button" onClick={() => setResetStep(0)}
+                  style={{
+                    flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
+                    cursor: "pointer", border: "1px solid var(--c-border)", backgroundColor: "transparent", color: "var(--c-text2)",
+                  }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+          {resetStep === 4 && (
+            <div style={{ marginBottom: "0.25rem" }}>
+              <p style={{ fontSize: "0.8125rem", color: "#c45050", marginBottom: "0.5rem", fontWeight: 500 }}>
+                Enter your password to confirm
+              </p>
+              <input
+                type="password"
+                value={resetPassword}
+                onChange={e => { setResetPassword(e.target.value); setResetError(null); }}
+                placeholder="Password"
+                className="th-input"
+                style={{ width: "100%", fontSize: "0.875rem", borderRadius: "0.5rem", padding: "0.5rem 0.625rem", boxSizing: "border-box", marginBottom: "0.5rem" }}
+                onKeyDown={e => e.key === "Enter" && handleReset()}
+                autoFocus
+              />
+              {resetError && (
+                <p style={{ fontSize: "0.75rem", color: "#c45050", marginBottom: "0.5rem" }}>{resetError}</p>
+              )}
+              <div style={{ display: "flex", gap: "0.5rem" }}>
+                <button type="button" onClick={handleReset} disabled={resetting || !resetPassword}
+                  style={{
+                    flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
+                    fontWeight: 600, cursor: resetting || !resetPassword ? "default" : "pointer",
+                    border: "none", backgroundColor: "#c45050", color: "#fff",
+                    opacity: resetting || !resetPassword ? 0.6 : 1,
+                  }}>
+                  {resetting ? "Resetting…" : "Reset everything"}
+                </button>
+                <button type="button" onClick={() => { setResetStep(0); setResetPassword(""); setResetError(null); }}
+                  style={{
+                    flex: 1, padding: "0.4rem", borderRadius: "0.5rem", fontSize: "0.8125rem",
+                    cursor: "pointer", border: "1px solid var(--c-border)", backgroundColor: "transparent", color: "var(--c-text2)",
+                  }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div style={{ height: 1, backgroundColor: "var(--c-divider)", margin: "0.5rem 0" }} />
 
           {/* Sign out */}
           <button type="button"
