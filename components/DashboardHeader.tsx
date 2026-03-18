@@ -33,7 +33,7 @@ export default function DashboardHeader() {
   return (
     <header className="mb-10 pr-12">
       <h1 className="text-3xl sm:text-4xl font-bold tracking-tight" style={{ color: "var(--c-text1)" }}>
-        {greeting}{displayName ? `, ${displayName}` : ""}{emoji ? ` ${emoji}` : ""}
+        {greeting}{displayName ? `, ${displayName}` : ""} {emoji ?? "☀️"}
       </h1>
       <div className="flex items-center gap-3 mt-1.5 flex-wrap">
         <p className="text-base" style={{ color: "var(--c-text3)" }}>{dateStr}</p>
