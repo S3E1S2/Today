@@ -167,13 +167,19 @@ const TOPIC_KEYWORDS: Record<string, string[]> = {
   "Fashion":        ["fashion", "designer", "runway", "vogue", "couture", "streetwear", "fashion week"],
   "Entertainment":  ["oscar", "grammy", "emmy", "bafta", "celebrity", "box office", "hollywood", "netflix", "streaming", "blockbuster", "box-office"],
   "Health":         ["health", "disease", "vaccine", "hospital", "medical", "virus", "cancer", "treatment", "pandemic", "fda", "WHO", "outbreak"],
-  "Science":        ["space", "discovery", "nasa", "biology", "physics", "asteroid", "planet", "gene", "quantum", "scientists found", "new species"],
+  "Science":        ["nasa", "astronomy", "asteroid", "exoplanet", "quantum", "scientists found", "new species", "genome", "crispr", "telescope", "black hole", "particle accelerator", "scientific study", "laboratory", "researchers discovered"],
   "Environment":    ["climate change", "carbon emissions", "pollution", "renewable energy", "wildfire", "deforestation", "global warming", "sea level"],
-  "War & Conflict": ["war", "troops", "military strike", "missile", "bombing", "ceasefire", "invasion", "airstrike", "hostage", "armed forces", "combat", "warzone", "war zone", "war crimes", "rebel forces", "insurgent", "siege"],
+  "War & Conflict": ["war", "troops", "military strike", "missile", "bombing", "ceasefire", "invasion", "airstrike", "hostage", "armed forces", "warzone", "war zone", "war crimes", "rebel forces", "insurgent", "siege", "shelling", "military offensive"],
   "Business":       ["stock market", "economy", "gdp", "inflation", "trade war", "earnings", "merger", "acquisition", "central bank", "interest rate", "recession"],
   "Sports":         ["sport", "tournament", "championship", "league", "nfl", "nba", "fifa", "olympic", "world cup", "grand prix", "transfer", "match result"],
   "Technology":     ["artificial intelligence", "software", "apple", "google", "meta", "startup", "cybersecurity", "robot", "semiconductor", "tech giant", "elon musk"],
   "Politics":       ["election", "president", "government", "parliament", "minister", "senate", "congress", "white house", "diplomatic", "sanctions", "summit"],
+};
+
+// If an article matches ANY of these for a given topic, it is excluded from that topic
+const TOPIC_EXCLUSIONS: Partial<Record<string, string[]>> = {
+  "War & Conflict": ["oscar", "grammy", "emmy", "bafta", "award", "celebrity", "box office", "hollywood", "film festival", "movie", "actor", "actress"],
+  "Science":        ["murder", "killed", "shooting", "arrested", "convicted", "sentenced", "crime scene", "homicide"],
 };
 
 const TOPIC_I18N_KEYS: Record<string, string> = {
@@ -188,8 +194,6 @@ const TOPIC_I18N_KEYS: Record<string, string> = {
   "Technology":     "news.topic.technology",
   "Politics":       "news.topic.politics",
 };
-
-const ENTERTAINMENT_SIGNALS = ["oscar", "award", "film", "movie", "actor", "actress", "celebrity", "grammy", "emmy", "bafta", "hollywood"];
 
 /* ── Source accent colors ──────────────────────────────────────────────────── */
 
@@ -229,14 +233,16 @@ const FILTER_KEY = "today-news-filters-v1";
 
 /* ── Helpers ───────────────────────────────────────────────────────────────── */
 
-function detectPrimaryTopic(title: string, desc: string): string | null {
-  const text = `${title} ${desc}`.toLowerCase();
-  for (const topic of TOPIC_PRIORITY) {
-    if (!TOPIC_KEYWORDS[topic].some(kw => text.includes(kw))) continue;
-    if (topic === "War & Conflict" && ENTERTAINMENT_SIGNALS.some(kw => text.includes(kw))) continue;
-    return topic;
-  }
-  return null;
+function matchesTopic(text: string, topic: string): boolean {
+  const keywords = TOPIC_KEYWORDS[topic];
+  if (!keywords) return false;
+  const matches = keywords.some(kw =>
+    kw.includes(" ") ? text.includes(kw) : new RegExp(`\\b${kw}\\b`).test(text)
+  );
+  if (!matches) return false;
+  const exclusions = TOPIC_EXCLUSIONS[topic];
+  if (exclusions?.some(ex => text.includes(ex))) return false;
+  return true;
 }
 
 function timeSince(iso: string, t: (key: string, vars?: Record<string, string | number>) => string): string {
@@ -286,9 +292,9 @@ export default function NewsSection() {
   const [refreshKey,    setRefreshKey]    = useState(0);
 
   // Filters
-  const [category,     setCategory]     = useState<"all" | "world" | "sports">("all");
-  const [activeTopic,  setActiveTopic]  = useState<string | null>(null);
-  const [filtersReady, setFiltersReady] = useState(false);
+  const [category,      setCategory]      = useState<"all" | "world" | "sports">("all");
+  const [activeTopics,  setActiveTopics]  = useState<string[]>([]);
+  const [filtersReady,  setFiltersReady]  = useState(false);
 
   // Load persisted filters
   useEffect(() => {
@@ -297,7 +303,7 @@ export default function NewsSection() {
       if (raw) {
         const p = JSON.parse(raw);
         if (p.category) setCategory(p.category);
-        if (typeof p.topic === "string") setActiveTopic(p.topic);
+        if (Array.isArray(p.topics)) setActiveTopics(p.topics);
       }
     } catch {}
     setFiltersReady(true);
@@ -305,8 +311,8 @@ export default function NewsSection() {
 
   useEffect(() => {
     if (!filtersReady) return;
-    try { localStorage.setItem(FILTER_KEY, JSON.stringify({ category, topic: activeTopic })); } catch {}
-  }, [category, activeTopic, filtersReady]);
+    try { localStorage.setItem(FILTER_KEY, JSON.stringify({ category, topics: activeTopics })); } catch {}
+  }, [category, activeTopics, filtersReady]);
 
   // ── Fetch feeds (re-runs when locale or refreshKey changes) ────────────────
   useEffect(() => {
@@ -359,18 +365,16 @@ export default function NewsSection() {
   const filtered = useMemo(() => {
     let result = displayArticles;
     if (category !== "all") result = result.filter(a => a.category === category);
-    if (activeTopic !== null) {
+    if (activeTopics.length > 0) {
       result = result.filter(a => {
         const text = `${a.title} ${a.description}`.toLowerCase();
-        return TOPIC_KEYWORDS[activeTopic!]?.some(kw =>
-          kw.includes(" ") ? text.includes(kw) : new RegExp(`\\b${kw}\\b`).test(text)
-        ) ?? false;
+        return activeTopics.some(topic => matchesTopic(text, topic));
       });
     }
     return result.slice(0, 10);
-  }, [displayArticles, category, activeTopic]);
+  }, [displayArticles, category, activeTopics]);
 
-  const anyFilterActive = category !== "all" || activeTopic !== null;
+  const anyFilterActive = category !== "all" || activeTopics.length > 0;
 
   return (
     <div className="card p-5 sm:p-6 flex flex-col gap-4">
@@ -435,22 +439,24 @@ export default function NewsSection() {
       <div className="-mx-5 sm:-mx-6 px-5 sm:px-6 overflow-x-auto">
         <div className="flex gap-2 pb-0.5" style={{ width: "max-content" }}>
           <button
-            onClick={() => setActiveTopic(null)}
+            onClick={() => setActiveTopics([])}
             className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer whitespace-nowrap"
             style={{
-              backgroundColor: activeTopic === null ? "var(--c-accent)" : "transparent",
-              border: `1.5px solid ${activeTopic === null ? "var(--c-accent)" : "var(--c-border)"}`,
-              color: activeTopic === null ? "var(--c-accent-fg)" : "var(--c-text2)",
+              backgroundColor: activeTopics.length === 0 ? "var(--c-accent)" : "transparent",
+              border: `1.5px solid ${activeTopics.length === 0 ? "var(--c-accent)" : "var(--c-border)"}`,
+              color: activeTopics.length === 0 ? "var(--c-accent-fg)" : "var(--c-text2)",
             }}
           >
             {t("news.topic.all")}
           </button>
           {TOPIC_PRIORITY.map(topic => {
-            const on = activeTopic === topic;
+            const on = activeTopics.includes(topic);
             return (
               <button
                 key={topic}
-                onClick={() => setActiveTopic(prev => prev === topic ? null : topic)}
+                onClick={() => setActiveTopics(prev =>
+                  prev.includes(topic) ? prev.filter(t => t !== topic) : [...prev, topic]
+                )}
                 className="text-xs px-3 py-1.5 rounded-full font-medium transition-all cursor-pointer whitespace-nowrap"
                 style={{
                   backgroundColor: on ? "var(--c-accent)" : "transparent",
@@ -483,7 +489,8 @@ export default function NewsSection() {
         <div className="flex flex-col">
           {filtered.map((a, i) => {
             const isTranslated = !!a.originalTitle;
-            const pt = detectPrimaryTopic(a.title, a.description);
+            const text = `${a.title} ${a.description}`.toLowerCase();
+            const pt = TOPIC_PRIORITY.find(topic => matchesTopic(text, topic)) ?? null;
             return (
               <a
                 key={a.id}
@@ -546,7 +553,7 @@ export default function NewsSection() {
           <p className="text-sm" style={{ color: "var(--c-text2)" }}>{t("news.noMatch")}</p>
           {anyFilterActive && (
             <button
-              onClick={() => { setCategory("all"); setActiveTopic(null); }}
+              onClick={() => { setCategory("all"); setActiveTopics([]); }}
               className="text-xs mt-2 cursor-pointer"
               style={{ color: "var(--c-accent)" }}
             >
