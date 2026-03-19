@@ -469,18 +469,39 @@ export default function AccountButton() {
 
           {/* Reset profile */}
           {resetStep === 0 && (
-            <button type="button"
-              onClick={() => setResetStep(1)}
-              style={{
-                width: "100%", textAlign: "left", padding: "0.5rem 0.25rem",
-                borderRadius: "0.5rem", fontSize: "0.875rem", cursor: "pointer",
-                color: "var(--c-text3)", backgroundColor: "transparent", border: "none",
-              }}
-              onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--c-item)"; e.currentTarget.style.color = "#c45050"; }}
-              onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--c-text3)"; }}
-            >
-              {t("profile.reset")}
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "0.375rem" }}>
+              <button type="button"
+                onClick={() => setResetStep(1)}
+                style={{
+                  flex: 1, textAlign: "left", padding: "0.5rem 0.25rem",
+                  borderRadius: "0.5rem", fontSize: "0.875rem", cursor: "pointer",
+                  color: "var(--c-text3)", backgroundColor: "transparent", border: "none",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = "var(--c-item)"; e.currentTarget.style.color = "#c45050"; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = "transparent"; e.currentTarget.style.color = "var(--c-text3)"; }}
+              >
+                {t("profile.reset")}
+              </button>
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}
+                onMouseEnter={e => { const tip = e.currentTarget.querySelector<HTMLElement>(".reset-tip"); if (tip) tip.style.display = "block"; }}
+                onMouseLeave={e => { const tip = e.currentTarget.querySelector<HTMLElement>(".reset-tip"); if (tip) tip.style.display = "none"; }}
+              >
+                <span style={{
+                  width: 16, height: 16, borderRadius: "50%", fontSize: "0.6875rem", fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "default",
+                  backgroundColor: "var(--c-skel)", color: "var(--c-text3)", flexShrink: 0,
+                }}>i</span>
+                <div className="reset-tip" style={{
+                  display: "none", position: "absolute", bottom: "calc(100% + 6px)", right: 0,
+                  width: 220, padding: "0.5rem 0.625rem", borderRadius: "0.5rem",
+                  backgroundColor: "var(--c-card)", border: "1px solid var(--c-border)",
+                  boxShadow: "var(--c-shadow-h)", fontSize: "0.75rem", color: "var(--c-text2)",
+                  lineHeight: 1.5, zIndex: 100, pointerEvents: "none",
+                }}>
+                  This will permanently delete all your habits, sleep entries, journal entries, and account data. This cannot be undone.
+                </div>
+              </div>
+            </div>
           )}
           {resetStep >= 1 && resetStep <= 3 && (
             <div style={{ marginBottom: "0.25rem" }}>
