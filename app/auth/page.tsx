@@ -231,15 +231,18 @@ export default function AuthPage() {
 
         if (error) { setError(error.message); return; }
 
-        // Save email + optional hint to profile
+        // Save email + optional hint via server API (works with or without a session)
         const saveHintToProfile = async (userId: string) => {
-          const data: Record<string, string> = { id: userId, email };
-          if (hint.trim()) data.password_hint = hint.trim();
-          await supabase.from("profiles").upsert(data);
+          await fetch("/api/save-profile", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ userId, email, hint: hint.trim() || undefined }),
+          });
         };
 
+        if (data.user) await saveHintToProfile(data.user.id);
+
         if (data.session) {
-          if (data.user) await saveHintToProfile(data.user.id);
           clearAppLocalStorage();
           setInfo("Account created! Redirecting…");
           window.location.href = "/";
@@ -248,10 +251,11 @@ export default function AuthPage() {
 
         setInfo("Account created — signing you in…");
         const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({ email, password });
-        if (signInData.session && signInData.user) {
-          await saveHintToProfile(signInData.user.id);
+        if (signInData.session) {
           clearAppLocalStorage();
           window.location.href = "/";
+        } else if (signInErr?.message === "Invalid login credentials") {
+          setError("An account with this email already exists. Try signing in instead, or use Forgot Password if you don't remember your password.");
         } else {
           setError(signInErr?.message ?? "Could not sign in after registration.");
         }
@@ -261,7 +265,7 @@ export default function AuthPage() {
       // Sign in
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-      if (error && error.message !== "Email not confirmed") {
+      if (error) {
         setError(error.message);
         return;
       }
@@ -273,13 +277,7 @@ export default function AuthPage() {
         return;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        clearAppLocalStorage();
-        window.location.href = "/";
-      } else {
-        setError("Could not establish a session. Check your credentials or try signing up.");
-      }
+      setError("Could not establish a session. Check your credentials or try signing up.");
     } catch (err) {
       console.error("[Auth] unexpected error:", err);
       setError("Something went wrong. Please try again.");
@@ -445,7 +443,6 @@ export default function AuthPage() {
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     required
-                    minLength={6}
                     autoComplete={mode === "signup" ? "new-password" : "current-password"}
                     className="th-input"
                     style={inputStyle}
