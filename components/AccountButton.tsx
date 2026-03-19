@@ -410,19 +410,21 @@ export default function AccountButton() {
               <span style={{ fontSize: "0.6875rem", fontWeight: 600, color: "var(--c-text3)", textTransform: "uppercase", letterSpacing: "0.06em" }}>
                 Hint
               </span>
-              <div style={{ position: "relative", display: "inline-flex", alignItems: "center" }} className="hint-info-wrap">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--c-text3)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ cursor: "default", flexShrink: 0 }}>
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="8" strokeWidth="3" />
-                  <line x1="12" y1="12" x2="12" y2="16" />
-                </svg>
-                <div className="hint-tooltip" style={{
-                  position: "absolute", bottom: "calc(100% + 6px)", left: 0,
-                  backgroundColor: "var(--c-text1)", color: "var(--c-bg)",
-                  fontSize: "0.6875rem", lineHeight: 1.45, padding: "0.4rem 0.6rem",
-                  borderRadius: "0.5rem", whiteSpace: "normal", width: 170,
-                  pointerEvents: "none", zIndex: 100,
-                  opacity: 0, transition: "opacity 0.15s",
+              <div style={{ position: "relative", display: "flex", alignItems: "center" }}
+                onMouseEnter={e => { const tip = e.currentTarget.querySelector<HTMLElement>(".hint-tip"); if (tip) tip.style.display = "block"; }}
+                onMouseLeave={e => { const tip = e.currentTarget.querySelector<HTMLElement>(".hint-tip"); if (tip) tip.style.display = "none"; }}
+              >
+                <span style={{
+                  width: 16, height: 16, borderRadius: "50%", fontSize: "0.6875rem", fontWeight: 700,
+                  display: "flex", alignItems: "center", justifyContent: "center", cursor: "default",
+                  backgroundColor: "var(--c-skel)", color: "var(--c-text3)", flexShrink: 0,
+                }}>i</span>
+                <div className="hint-tip" style={{
+                  display: "none", position: "absolute", bottom: "calc(100% + 6px)", left: 0,
+                  width: 220, padding: "0.5rem 0.625rem", borderRadius: "0.5rem",
+                  backgroundColor: "var(--c-card)", border: "1px solid var(--c-border)",
+                  boxShadow: "var(--c-shadow-h)", fontSize: "0.75rem", color: "var(--c-text2)",
+                  lineHeight: 1.5, zIndex: 100, pointerEvents: "none",
                 }}>
                   {t("profile.passwordHintNote")}
                 </div>
