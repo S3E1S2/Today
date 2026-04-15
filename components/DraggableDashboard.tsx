@@ -5,10 +5,10 @@ import { useAuth } from "./AuthProvider";
 import { supabase } from "@/lib/supabase";
 
 export type SectionId =
-  | "news" | "history-fact" | "habits-sleep" | "journal" | "heatmap" | "calendar";
+  | "news" | "history-fact" | "habits-sleep" | "journal" | "heatmap" | "calendar" | "productivity";
 
 export const DEFAULT_ORDER: SectionId[] = [
-  "news", "history-fact", "habits-sleep", "journal", "heatmap", "calendar",
+  "news", "history-fact", "habits-sleep", "productivity", "journal", "heatmap", "calendar",
 ];
 
 const LS_VISIBILITY = "today-sections-visible";

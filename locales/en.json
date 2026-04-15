@@ -221,8 +221,26 @@
   "section.news": "Headlines",
   "section.historyfact": "On This Day & Did You Know",
   "section.habitssleep": "Habits & Sleep",
+  "section.productivity": "To-Do & Shortcuts",
   "section.weekly": "Weekly Summary",
   "section.journal": "Journal, Week & Countdowns",
   "section.heatmap": "Habit Activity",
-  "section.calendar": "Calendar"
+  "section.calendar": "Calendar",
+
+  "todo.title": "To-Do List",
+  "todo.empty": "No tasks yet — add one below",
+  "todo.placeholder": "Add a task…",
+  "todo.add": "Add",
+  "todo.delete": "Delete task",
+  "todo.markDone": "Mark done",
+  "todo.markUndone": "Mark undone",
+  "todo.clearDone": "Clear completed",
+  "todo.count": "{done} / {total} done",
+
+  "shortcuts.title": "Shortcuts",
+  "shortcuts.empty": "No shortcuts yet — add a quick link below",
+  "shortcuts.labelPlaceholder": "Label…",
+  "shortcuts.urlPlaceholder": "URL…",
+  "shortcuts.add": "Add",
+  "shortcuts.delete": "Remove shortcut",
 }

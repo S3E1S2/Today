@@ -221,8 +221,26 @@
   "section.news": "Titulares",
   "section.historyfact": "Hoy en la historia y ¿Sabías que?",
   "section.habitssleep": "Hábitos y Sueño",
+  "section.productivity": "Tareas y Accesos directos",
   "section.weekly": "Resumen semanal",
   "section.journal": "Diario, Semana y Cuentas regresivas",
   "section.heatmap": "Actividad de hábitos",
-  "section.calendar": "Calendario"
+  "section.calendar": "Calendario",
+
+  "todo.title": "Lista de tareas",
+  "todo.empty": "Sin tareas — agrega una abajo",
+  "todo.placeholder": "Agregar una tarea…",
+  "todo.add": "Agregar",
+  "todo.delete": "Eliminar tarea",
+  "todo.markDone": "Marcar como hecha",
+  "todo.markUndone": "Marcar como pendiente",
+  "todo.clearDone": "Limpiar completadas",
+  "todo.count": "{done} / {total} hechas",
+
+  "shortcuts.title": "Accesos directos",
+  "shortcuts.empty": "Sin accesos directos — agrega un enlace abajo",
+  "shortcuts.labelPlaceholder": "Etiqueta…",
+  "shortcuts.urlPlaceholder": "URL…",
+  "shortcuts.add": "Agregar",
+  "shortcuts.delete": "Eliminar acceso",
 }

@@ -212,7 +212,25 @@
   "section.historyfact": "Heute in der Geschichte & Wusstest du?",
   "section.habitssleep": "Gewohnheiten & Schlaf",
   "section.weekly": "Wochenzusammenfassung",
+  "section.productivity": "Aufgaben & Verknüpfungen",
   "section.journal": "Tagebuch, Woche & Countdowns",
   "section.heatmap": "Gewohnheitsaktivität",
-  "section.calendar": "Kalender"
+  "section.calendar": "Kalender",
+
+  "todo.title": "Aufgabenliste",
+  "todo.empty": "Keine Aufgaben — füge eine unten hinzu",
+  "todo.placeholder": "Aufgabe hinzufügen…",
+  "todo.add": "Hinzufügen",
+  "todo.delete": "Aufgabe löschen",
+  "todo.markDone": "Als erledigt markieren",
+  "todo.markUndone": "Als offen markieren",
+  "todo.clearDone": "Erledigte löschen",
+  "todo.count": "{done} / {total} erledigt",
+
+  "shortcuts.title": "Verknüpfungen",
+  "shortcuts.empty": "Keine Verknüpfungen — füge einen Link unten hinzu",
+  "shortcuts.labelPlaceholder": "Bezeichnung…",
+  "shortcuts.urlPlaceholder": "URL…",
+  "shortcuts.add": "Hinzufügen",
+  "shortcuts.delete": "Verknüpfung entfernen"
 }

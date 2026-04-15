@@ -212,7 +212,25 @@
   "section.historyfact": "Ce jour & Le saviez-vous",
   "section.habitssleep": "Habitudes & Sommeil",
   "section.weekly": "Résumé de la semaine",
+  "section.productivity": "Tâches & Raccourcis",
   "section.journal": "Journal, Semaine & Comptes à rebours",
   "section.heatmap": "Activité des habitudes",
-  "section.calendar": "Calendrier"
+  "section.calendar": "Calendrier",
+
+  "todo.title": "Liste de tâches",
+  "todo.empty": "Aucune tâche — ajoutez-en une ci-dessous",
+  "todo.placeholder": "Ajouter une tâche…",
+  "todo.add": "Ajouter",
+  "todo.delete": "Supprimer la tâche",
+  "todo.markDone": "Marquer comme faite",
+  "todo.markUndone": "Marquer comme à faire",
+  "todo.clearDone": "Effacer les complétées",
+  "todo.count": "{done} / {total} faites",
+
+  "shortcuts.title": "Raccourcis",
+  "shortcuts.empty": "Aucun raccourci — ajoutez un lien ci-dessous",
+  "shortcuts.labelPlaceholder": "Libellé…",
+  "shortcuts.urlPlaceholder": "URL…",
+  "shortcuts.add": "Ajouter",
+  "shortcuts.delete": "Supprimer le raccourci",
 }

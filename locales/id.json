@@ -212,7 +212,25 @@
   "section.historyfact": "Hari Ini & Tahukah Kamu?",
   "section.habitssleep": "Kebiasaan & Tidur",
   "section.weekly": "Ringkasan Minggu",
+  "section.productivity": "Tugas & Pintasan",
   "section.journal": "Jurnal, Minggu & Hitungan mundur",
   "section.heatmap": "Aktivitas Kebiasaan",
-  "section.calendar": "Kalender"
+  "section.calendar": "Kalender",
+
+  "todo.title": "Daftar Tugas",
+  "todo.empty": "Belum ada tugas — tambahkan di bawah",
+  "todo.placeholder": "Tambah tugas…",
+  "todo.add": "Tambah",
+  "todo.delete": "Hapus tugas",
+  "todo.markDone": "Tandai selesai",
+  "todo.markUndone": "Tandai belum selesai",
+  "todo.clearDone": "Hapus yang selesai",
+  "todo.count": "{done} / {total} selesai",
+
+  "shortcuts.title": "Pintasan",
+  "shortcuts.empty": "Belum ada pintasan — tambahkan tautan di bawah",
+  "shortcuts.labelPlaceholder": "Label…",
+  "shortcuts.urlPlaceholder": "URL…",
+  "shortcuts.add": "Tambah",
+  "shortcuts.delete": "Hapus pintasan",
 }

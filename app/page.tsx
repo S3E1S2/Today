@@ -1,16 +1,18 @@
-import NewsSection        from "@/components/NewsSection";
-import HistoryCard        from "@/components/HistoryCard";
-import FactCard           from "@/components/FactCard";
-import WikiDiscover       from "@/components/WikiDiscover";
-import HabitTracker       from "@/components/HabitTracker";
+import NewsSection          from "@/components/NewsSection";
+import HistoryCard          from "@/components/HistoryCard";
+import FactCard             from "@/components/FactCard";
+import WikiDiscover         from "@/components/WikiDiscover";
+import HabitTracker         from "@/components/HabitTracker";
 import CalendarSection, { HabitActivitySection } from "@/components/CalendarSection";
-import SettingsModal      from "@/components/SettingsModal";
-import SleepTracker       from "@/components/SleepTracker";
-import DashboardHeader    from "@/components/DashboardHeader";
-import AccountButton      from "@/components/AccountButton";
-import JournalSection     from "@/components/JournalSection";
-import CountdownSection   from "@/components/CountdownSection";
-import WeekSummary        from "@/components/WeekSummary";
+import SettingsModal        from "@/components/SettingsModal";
+import SleepTracker         from "@/components/SleepTracker";
+import DashboardHeader      from "@/components/DashboardHeader";
+import AccountButton        from "@/components/AccountButton";
+import JournalSection       from "@/components/JournalSection";
+import CountdownSection     from "@/components/CountdownSection";
+import WeekSummary          from "@/components/WeekSummary";
+import TodoList             from "@/components/TodoList";
+import ShortcutsWidget      from "@/components/ShortcutsWidget";
 import DraggableDashboard, { DashboardProvider } from "@/components/DraggableDashboard";
 
 export default function Home() {
@@ -40,6 +42,12 @@ export default function Home() {
           <div data-section="habits-sleep" className="grid grid-cols-1 md:grid-cols-2 gap-5">
             <HabitTracker />
             <SleepTracker />
+          </div>
+
+          {/* productivity: To-Do | Shortcuts */}
+          <div data-section="productivity" className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <TodoList />
+            <ShortcutsWidget />
           </div>
 
           {/* journal: Journal | Week Summary + Countdown stacked */}
